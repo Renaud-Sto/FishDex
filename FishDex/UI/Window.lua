@@ -193,9 +193,17 @@ local function build()
     f.status:SetPoint("TOPLEFT", f.name, "BOTTOMLEFT", 0, -4)
     f.status:SetPoint("RIGHT", face, "RIGHT", -10, 0)
     f.status:SetJustifyH("LEFT")
+    f.status:SetWordWrap(false)
+    -- First catch on its own line under the icon: beside it, it wrapped onto the zones
+    -- header (seen in game 2026-10-31, frFR texts).
+    f.first = face:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    f.first:SetPoint("TOPLEFT", f.bigIcon, "BOTTOMLEFT", 2, -6)
+    f.first:SetPoint("RIGHT", face, "RIGHT", -10, 0)
+    f.first:SetJustifyH("LEFT")
+    f.first:SetWordWrap(false)
     for i = 1, DETAIL_LINES do
         local fs = face:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-        fs:SetPoint("TOPLEFT", face, "TOPLEFT", 12, -60 - (i - 1) * 16)
+        fs:SetPoint("TOPLEFT", face, "TOPLEFT", 12, -80 - (i - 1) * 16)
         fs:SetWidth(DETAIL_W - 24)
         fs:SetJustifyH("LEFT")
         fs:SetWordWrap(false)
@@ -259,6 +267,7 @@ local function showDetail(entries)
     local e
     for _, x in ipairs(entries) do if x.id == state.selected then e = x end end
     for _, fs in ipairs(lines) do fs:SetText("") end
+    f.first:SetText("")
     if not e then
         f.bigIcon:Hide()
         f.name:SetText("")
@@ -277,10 +286,12 @@ local function showDetail(entries)
     if caught then
         local c = db.catches[e.id]
         local when = type(c.first) == "number" and date("%d/%m/%Y", c.first) or "?"
-        local text = string.format(L.CAUGHT_COUNT, c.count) .. " - " .. string.format(L.FIRST_CATCH, when)
-        if type(c.zone) == "string" then text = text .. " " .. string.format(L.FIRST_ZONE, c.zone) end
-        f.status:SetText(text)
+        local first = string.format(L.FIRST_CATCH, when)
+        if type(c.zone) == "string" then first = first .. " " .. string.format(L.FIRST_ZONE, c.zone) end
+        f.status:SetText(string.format(L.CAUGHT_COUNT, c.count))
         paint(f.status, WHITE)
+        f.first:SetText(first)
+        paint(f.first, GREY)
     else
         f.status:SetText(L.NOT_CAUGHT)
         paint(f.status, GREY)
