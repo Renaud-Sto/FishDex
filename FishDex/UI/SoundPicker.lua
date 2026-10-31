@@ -11,8 +11,15 @@ local L, Kit, Sounds = ns.L, ns.Kit, ns.Sounds
 local WIDTH, HEIGHT = 440, 470
 local ROWS, ROW_H = 15, 20
 local p -- the window, nil until first open
-local state = { target = "new", keys = {}, offset = 0, picked = nil }
-local rows, targets = {}, {}
+local state = { target = "new", mode = "selection", keys = {}, offset = 0, picked = nil }
+local rows, targets, modes = {}, {}, {}
+
+-- The list for the current mode and search text.
+local function relist()
+    local text = p.search:GetText()
+    state.keys = state.mode == "all" and Sounds.filter(SOUNDKIT, text) or Sounds.selection(text)
+    state.offset = 0
+end
 
 local function raise() if p then p:Raise() end end
 
@@ -80,21 +87,30 @@ local function build()
     p.searchLabel:SetPoint("TOPLEFT", p, "TOPLEFT", 18, -96)
     p.search = CreateFrame("EditBox", nil, nil, "InputBoxTemplate")
     p.search:SetParent(p)
-    p.search:SetSize(200, 22)
+    p.search:SetSize(120, 22)
     p.search:SetAutoFocus(false)
     p.search:SetPoint("LEFT", p.searchLabel, "RIGHT", 12, 0)
     p.search:SetScript("OnEnterPressed", p.search.ClearFocus)
     p.search:HookScript("OnEscapePressed", p.search.ClearFocus)
-    p.search:SetScript("OnTextChanged", function(self)
-        state.keys = Sounds.filter(SOUNDKIT, self:GetText())
-        state.offset = 0
+    p.search:SetScript("OnTextChanged", function()
+        relist()
         SoundPicker.refresh()
     end)
-    p.hint = p:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-    p.hint:SetPoint("LEFT", p.search, "RIGHT", 8, 0)
-    p.hint:SetPoint("RIGHT", p, "RIGHT", -14, 0)
-    p.hint:SetJustifyH("LEFT")
-    p.hint:SetWordWrap(false)
+    -- Selection (named game sound files) or every SOUNDKIT sound: two segmented buttons.
+    for i, mode in ipairs({ "selection", "all" }) do
+        local b = Kit.button(p, 96, 22, "", function(self)
+            state.mode = self.mode
+            relist()
+            SoundPicker.refresh()
+        end, raise)
+        b.mode = mode
+        if i == 1 then
+            b:SetPoint("LEFT", p.search, "RIGHT", 10, 0)
+        else
+            b:SetPoint("LEFT", modes[1], "RIGHT", 4, 0)
+        end
+        modes[i] = b
+    end
 
     -- The list: an inset with ROWS recycled rows; the mouse wheel scrolls it.
     p.inset = CreateFrame("Frame", nil, nil, "InsetFrameTemplate")
@@ -149,7 +165,7 @@ local function build()
     p.reset:SetPoint("RIGHT", p.use, "LEFT", -6, 0)
     p:HookScript("OnShow", function() SoundPicker.refresh() end)
 
-    state.keys = Sounds.filter(SOUNDKIT, "")
+    relist()
 end
 
 function SoundPicker.refresh()
@@ -166,7 +182,10 @@ function SoundPicker.refresh()
     Kit.paint(p.current, targetRGB(state.target))
     p.listen:SetText(L.SOUND_LISTEN)
     p.searchLabel:SetText(L.SOUND_SEARCH)
-    p.hint:SetText((p.search:GetText() or "") == "" and L.SOUND_HINT or "")
+    for _, b in ipairs(modes) do
+        b:SetText(b.mode == "all" and L.SOUND_MODE_ALL or L.SOUND_MODE_SELECTION)
+        if b.mode == state.mode then b:LockHighlight() else b:UnlockHighlight() end
+    end
     for i, r in ipairs(rows) do
         local k = state.keys[state.offset + i]
         r.key = k

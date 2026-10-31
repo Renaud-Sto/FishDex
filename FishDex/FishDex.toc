@@ -13,6 +13,7 @@ Locale.lua
 Data.lua
 Dex.lua
 Shiny.lua
+SoundList.lua
 Sounds.lua
 Detect.lua
 Announce.lua

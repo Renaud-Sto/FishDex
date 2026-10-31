@@ -5,17 +5,20 @@ local W = dofile("tests/fakewow.lua")
 local KIT = { UI_EPICLOOT_TOAST = 1, UI_LEGENDARY_LOOT_TOAST = 2, READY_CHECK = 3,
     UI_GARRISON_TOAST_MISSION_COMPLETE = 4, MAP_PING = 5, LEVELUPSOUND = 6, BAD = "x" }
 
-H.test("an empty search lists reward-like sounds, a word lists every key containing it", function()
-    local ns = H.newNS("Locale", "Data", "Dex", "Shiny", "Sounds")
-    H.eq(ns.Sounds.filter(KIT, ""), { "LEVELUPSOUND", "UI_EPICLOOT_TOAST",
-        "UI_GARRISON_TOAST_MISSION_COMPLETE", "UI_LEGENDARY_LOOT_TOAST" })
+local function load()
+    return H.newNS("Locale", "Data", "Dex", "Shiny", "SoundList", "Sounds")
+end
+
+H.test("all sounds: every SOUNDKIT key, or those containing the searched word", function()
+    local ns = load()
+    H.eq(#ns.Sounds.filter(KIT, ""), 6)
     H.eq(ns.Sounds.filter(KIT, " ping "), { "MAP_PING" })
     H.eq(ns.Sounds.filter(KIT, "bad"), {})
     H.eq(ns.Sounds.filter(nil, ""), {})
 end)
 
 H.test("the chosen sound wins when the client has it, else the first default it has", function()
-    local ns = H.newNS("Locale", "Data", "Dex", "Shiny", "Sounds")
+    local ns = load()
     local db = ns.Dex.repair({})
     H.eq(ns.Sounds.keyFor(db, "rare", KIT), "READY_CHECK")
     db.settings.sounds.rare = "MAP_PING"
@@ -26,11 +29,29 @@ H.test("the chosen sound wins when the client has it, else the first default it 
     H.eq(ns.Sounds.label("UI_LEGENDARY_LOOT_TOAST"), "Legendary loot toast")
 end)
 
+H.test("the selection lists named game sound files and a chosen file plays with PlaySoundFile", function()
+    local ns = load()
+    local all = ns.Sounds.selection("")
+    H.eq(#all, #ns.SoundList)
+    H.eq(all[1], "file:" .. ns.SoundList[1][1])
+    ns.setLocale("frFR")
+    H.eq(ns.Sounds.label("file:566564"), "Cloche : Cloche (Alliance)")
+    H.eq(ns.Sounds.selection("cloche")[1], "file:566564")
+    ns.setLocale("enUS")
+    H.eq(ns.Sounds.label("file:566564"), "Bell: Bell toll (Alliance)")
+    local db = ns.Dex.repair({})
+    db.settings.sounds.epic = "file:566564"
+    H.eq(ns.Sounds.keyFor(db, "epic", KIT), "file:566564")
+    db.settings.sounds.epic = "file:1" -- not in the selection: back to the default
+    H.eq(ns.Sounds.keyFor(db, "epic", KIT), "UI_GARRISON_TOAST_MISSION_COMPLETE")
+end)
+
 local function boot()
     local T = W.boot(H, { locale = "frFR" })
     T.sounds = {}
     T.env.SOUNDKIT = KIT
     T.env.PlaySound = function(id) T.sounds[#T.sounds + 1] = id end
+    T.env.PlaySoundFile = function(id) T.sounds[#T.sounds + 1] = "file" .. id end
     T.fire("ADDON_LOADED", H.ADDON)
     return T
 end
@@ -47,9 +68,13 @@ H.test("the sound window plays a clicked sound and keeps it for the chosen annou
     rawget(open, "scripts").OnClick(open)
     local win = T.env.FishDexSoundsWindow
     H.truthy(win and win:IsShown())
-    -- Choose the legendary announce, click the first listed sound, use it.
+    -- Choose the legendary announce, switch to all sounds, click one, use it.
     local legendary = find(T, function(fr) return rawget(fr, "target") == "legendary" end)
     rawget(legendary, "scripts").OnClick(legendary)
+    local first = find(T, function(fr) return rawget(fr, "key") == "file:" .. T.ns.SoundList[1][1] end)
+    H.truthy(first) -- the selection is shown first
+    local all = find(T, function(fr) return rawget(fr, "mode") == "all" end)
+    rawget(all, "scripts").OnClick(all)
     local row = find(T, function(fr) return rawget(fr, "key") == "LEVELUPSOUND" end)
     rawget(row, "scripts").OnClick(row)
     H.eq(T.sounds, { 6 })
