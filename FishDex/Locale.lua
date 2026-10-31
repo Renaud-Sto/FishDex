@@ -33,11 +33,12 @@ local enUS = {
     OPT_SOUND = "Sound",
     OPT_ANNOUNCE = "Announce",
     SELECT_HINT = "Select an entry to see its details.",
-    HELP = "/fishdex: open the window. /fishdex sound: sound on or off. /fishdex announce: announce on or off.",
+    HELP = "/fishdex: open the window. /fishdex sound, /fishdex announce: toggle them. /fishdex fr, en, auto: addon language.",
     SOUND_ON = "new catch sound on",
     SOUND_OFF = "new catch sound off",
     ANNOUNCE_ON = "new catch announce on",
     ANNOUNCE_OFF = "new catch announce off",
+    LANGUAGE_SET = "addon texts in English (/fishdex auto: client language)",
 }
 
 local frFR = {
@@ -68,11 +69,12 @@ local frFR = {
     OPT_SOUND = "Son",
     OPT_ANNOUNCE = "Annonce",
     SELECT_HINT = "Choisis une entrée pour voir ses détails.",
-    HELP = "/fishdex : ouvre la fenêtre. /fishdex son : son activé ou non. /fishdex annonce : annonce activée ou non.",
+    HELP = "/fishdex : ouvre la fenêtre. /fishdex son, /fishdex annonce : les active ou non. /fishdex fr, en, auto : langue de l'addon.",
     SOUND_ON = "son des nouvelles prises activé",
     SOUND_OFF = "son des nouvelles prises désactivé",
     ANNOUNCE_ON = "annonce des nouvelles prises activée",
     ANNOUNCE_OFF = "annonce des nouvelles prises désactivée",
+    LANGUAGE_SET = "textes de l'addon en français (/fishdex auto : langue du client)",
 }
 
 ns.LOCALES = { enUS = enUS, frFR = frFR }

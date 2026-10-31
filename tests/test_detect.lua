@@ -92,3 +92,16 @@ H.test("nothing is printed at login; the window opens and shows a slot per entry
     T.env.SlashCmdList.FISHDEX("")
     H.falsy(win:IsShown())
 end)
+
+H.test("/fishdex fr switches the addon texts on an English client and is kept for the next session", function()
+    local T = boot()
+    T.env.GetLocale = function() return "enUS" end
+    T.env.SlashCmdList.FISHDEX("en")
+    H.eq(T.ns.L.CAT_wreck, "Wrecks")
+    T.env.SlashCmdList.FISHDEX("fr")
+    H.eq(T.ns.L.CAT_wreck, "Épaves")
+    H.eq(T.env.FishDexDB.settings.locale, "frFR")
+    T.env.SlashCmdList.FISHDEX("auto")
+    H.eq(T.ns.L.CAT_wreck, "Wrecks")
+    H.eq(T.env.FishDexDB.settings.locale, "")
+end)

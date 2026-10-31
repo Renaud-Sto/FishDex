@@ -84,6 +84,7 @@ end
 function Main.init()
     if type(FishDexDB) ~= "table" then FishDexDB = {} end
     Main.db = Dex.repair(FishDexDB)
+    if Main.db.settings.locale ~= "" then ns.setLocale(Main.db.settings.locale) end
     Main.ready = true
 end
 
@@ -121,6 +122,13 @@ local function slash(msg)
         Main.toggleSetting("sound", L.SOUND_ON, L.SOUND_OFF)
     elseif cmd == "annonce" or cmd == "announce" then
         Main.toggleSetting("announce", L.ANNOUNCE_ON, L.ANNOUNCE_OFF)
+    elseif cmd == "fr" or cmd == "en" or cmd == "auto" then
+        -- Addon texts only: item, zone and recipe names stay in the client's language.
+        local locale = cmd == "fr" and "frFR" or cmd == "en" and "enUS" or ""
+        Main.db.settings.locale = locale
+        ns.setLocale(locale ~= "" and locale or GetLocale())
+        Main.say(L.LANGUAGE_SET)
+        Main.refresh()
     else
         Main.say(L.HELP)
     end

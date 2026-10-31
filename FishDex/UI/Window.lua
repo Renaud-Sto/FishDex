@@ -320,6 +320,9 @@ function Window.refresh()
         end
     end
     showDetail(entries)
+    for _, c in ipairs({ { f.sound, L.OPT_SOUND }, { f.announce, L.OPT_ANNOUNCE } }) do
+        if type(c[1].Text) == "table" then c[1].Text:SetText(c[2]) end
+    end
     f.sound:SetChecked(db.settings.sound)
     f.announce:SetChecked(db.settings.announce)
 end

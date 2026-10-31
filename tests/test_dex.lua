@@ -40,7 +40,7 @@ H.test("saved data is repaired in place and bad catch records are dropped", func
     local db = ns.Dex.repair(saved)
     H.truthy(db == saved)
     H.eq(saved.catches, { [6291] = { count = 1 } })
-    H.eq(saved.settings, { sound = true, announce = true })
+    H.eq(saved.settings, { sound = true, announce = true, locale = "" })
 end)
 
 H.test("recipe state: unscanned until a profession window was read, then known or unknown", function()

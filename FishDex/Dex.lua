@@ -15,7 +15,7 @@ Dex.DEFAULTS = {
     catches = {},
     known = {},
     scanned = {},
-    settings = { sound = true, announce = true },
+    settings = { sound = true, announce = true, locale = "" }, -- locale "": the client's
 }
 
 local byID = {}
