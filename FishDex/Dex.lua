@@ -11,7 +11,7 @@ local Data = ns.Data
 -- known[character key][recipe spell id] = true, scanned[character key] = true once that
 -- character opened a profession window (before that, "unknown" cannot be told apart).
 Dex.DEFAULTS = {
-    version = 1,
+    version = 2,
     catches = {},
     shiny = {}, -- shiny[itemID][grade] = { count, first } (Shiny.lua)
     known = {},
@@ -36,6 +36,16 @@ end
 
 -- Repairs the saved data in place (WoW keeps a reference to the loaded table).
 function Dex.repair(db)
+    -- Version 1 named the shiny grades shiny / rare / legendary; version 2 names them
+    -- rare / epic / legendary (blue, purple, orange). Rename before the version is filled.
+    if db.version == 1 and type(db.shiny) == "table" then
+        for _, byGrade in pairs(db.shiny) do
+            if type(byGrade) == "table" then
+                byGrade.epic, byGrade.rare, byGrade.shiny = byGrade.rare, byGrade.shiny, nil
+            end
+        end
+    end
+    db.version = Dex.DEFAULTS.version
     fill(db, Dex.DEFAULTS)
     for id, byGrade in pairs(db.shiny) do
         if type(id) ~= "number" or type(byGrade) ~= "table" then db.shiny[id] = nil end

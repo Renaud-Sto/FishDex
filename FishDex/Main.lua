@@ -131,8 +131,8 @@ local function slash(msg)
         Main.refresh()
     elseif cmd == "shinytest" then
         -- Not in the help: forces the next eligible catch to a grade, to see the announce.
-        local key = ((msg or ""):match("^%S+%s+(%S+)") or "shiny"):lower()
-        if not ns.Shiny.grade(key) then key = "shiny" end
+        local key = ((msg or ""):match("^%S+%s+(%S+)") or "rare"):lower()
+        if not ns.Shiny.grade(key) then key = "rare" end
         ns.Detect.forceNext = key
         Main.say(string.format(L.SHINY_TEST, L["GRADE_" .. key]))
     else
