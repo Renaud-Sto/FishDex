@@ -1,0 +1,9 @@
+## Interface: 16001
+## Title: FishDex Probe
+## Notes: THROWAWAY. Prints what the client really returns. Never ship.
+## Author: renaud
+## Version: 0.1.0
+## SavedVariables: FishDexProbeLog
+## X-Template: wow-addon-dev skill probe skeleton (keep Version equal to VERSION in Probe.lua)
+
+Probe.lua

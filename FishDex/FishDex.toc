@@ -1,0 +1,18 @@
+## Interface: 16001
+## Title: FishDex
+## Notes: A fishing collection: every fish, trophy, wreck and item you can fish, filled as you catch them.
+## Notes-frFR: Un pokédex de pêche : chaque poisson, trophée, épave et objet pêchable, rempli au fil de tes prises.
+## Author: renaud
+## Version: 0.1.0
+## IconTexture: Interface\Icons\Trade_Fishing
+## AddonCompartmentFunc: FishDex_OnCompartmentClick
+## SavedVariables: FishDexDB
+## X-License: MIT
+
+Locale.lua
+Data.lua
+Dex.lua
+Detect.lua
+Announce.lua
+Main.lua
+UI/Window.lua
