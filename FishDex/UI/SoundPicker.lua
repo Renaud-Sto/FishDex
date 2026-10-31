@@ -8,7 +8,7 @@ ns.SoundPicker = SoundPicker
 
 local L, Kit, Sounds = ns.L, ns.Kit, ns.Sounds
 
-local WIDTH, HEIGHT = 440, 470
+local WIDTH, HEIGHT = 440, 496
 local ROWS, ROW_H = 15, 20
 local p -- the window, nil until first open
 local state = { target = "new", mode = "selection", keys = {}, offset = 0, picked = nil }
@@ -17,7 +17,13 @@ local rows, targets, modes = {}, {}, {}
 -- The list for the current mode and search text.
 local function relist()
     local text = p.search:GetText()
-    state.keys = state.mode == "all" and Sounds.filter(SOUNDKIT, text) or Sounds.selection(text)
+    if state.mode == "all" then
+        state.keys = Sounds.filter(SOUNDKIT, text)
+    elseif state.mode == "addons" then
+        state.keys = Sounds.shared(text)
+    else
+        state.keys = Sounds.selection(text)
+    end
     state.offset = 0
 end
 
@@ -83,11 +89,25 @@ local function build()
     p.listen = Kit.button(p, 86, 22, "", function() Sounds.playFor(state.target) end, raise)
     p.listen:SetPoint("TOPRIGHT", p, "TOPRIGHT", -14, -58)
 
+    -- Where the sounds come from: the selection (named game files), every SOUNDKIT sound,
+    -- or the sounds other addons share (LibSharedMedia). Segmented buttons, own row.
+    local mw = math.floor((WIDTH - 28 - 2 * 4) / 3)
+    for i, mode in ipairs({ "selection", "all", "addons" }) do
+        local b = Kit.button(p, mw, 22, "", function(self)
+            state.mode = self.mode
+            relist()
+            SoundPicker.refresh()
+        end, raise)
+        b.mode = mode
+        b:SetPoint("TOPLEFT", p, "TOPLEFT", 14 + (i - 1) * (mw + 4), -90)
+        modes[i] = b
+    end
+
     p.searchLabel = p:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    p.searchLabel:SetPoint("TOPLEFT", p, "TOPLEFT", 18, -96)
+    p.searchLabel:SetPoint("TOPLEFT", p, "TOPLEFT", 18, -126)
     p.search = CreateFrame("EditBox", nil, nil, "InputBoxTemplate")
     p.search:SetParent(p)
-    p.search:SetSize(120, 22)
+    p.search:SetSize(200, 22)
     p.search:SetAutoFocus(false)
     p.search:SetPoint("LEFT", p.searchLabel, "RIGHT", 12, 0)
     p.search:SetScript("OnEnterPressed", p.search.ClearFocus)
@@ -96,26 +116,11 @@ local function build()
         relist()
         SoundPicker.refresh()
     end)
-    -- Selection (named game sound files) or every SOUNDKIT sound: two segmented buttons.
-    for i, mode in ipairs({ "selection", "all" }) do
-        local b = Kit.button(p, 96, 22, "", function(self)
-            state.mode = self.mode
-            relist()
-            SoundPicker.refresh()
-        end, raise)
-        b.mode = mode
-        if i == 1 then
-            b:SetPoint("LEFT", p.search, "RIGHT", 10, 0)
-        else
-            b:SetPoint("LEFT", modes[1], "RIGHT", 4, 0)
-        end
-        modes[i] = b
-    end
 
     -- The list: an inset with ROWS recycled rows; the mouse wheel scrolls it.
     p.inset = CreateFrame("Frame", nil, nil, "InsetFrameTemplate")
     p.inset:SetParent(p)
-    p.inset:SetPoint("TOPLEFT", p, "TOPLEFT", 12, -120)
+    p.inset:SetPoint("TOPLEFT", p, "TOPLEFT", 12, -150)
     p.inset:SetSize(WIDTH - 24, ROWS * ROW_H + 8)
     local list = CreateFrame("Frame", nil, p.inset)
     list:SetAllPoints(p.inset)
@@ -187,7 +192,7 @@ function SoundPicker.refresh()
     p.listen:SetText(L.SOUND_LISTEN)
     p.searchLabel:SetText(L.SOUND_SEARCH)
     for _, b in ipairs(modes) do
-        b:SetText(b.mode == "all" and L.SOUND_MODE_ALL or L.SOUND_MODE_SELECTION)
+        b:SetText(L["SOUND_MODE_" .. b.mode])
         if b.mode == state.mode then b:LockHighlight() else b:UnlockHighlight() end
     end
     for i, r in ipairs(rows) do
@@ -203,7 +208,8 @@ function SoundPicker.refresh()
         end
     end
     local n = #state.keys
-    p.position:SetText(n == 0 and L.SOUND_EMPTY or string.format(L.SOUND_POSITION,
+    local empty = state.mode == "addons" and L.SOUND_EMPTY_ADDONS or L.SOUND_EMPTY
+    p.position:SetText(n == 0 and empty or string.format(L.SOUND_POSITION,
         state.offset + 1, math.min(n, state.offset + ROWS), n))
     p.use:SetText(L.SOUND_USE)
     p.use:SetEnabled(state.picked ~= nil)

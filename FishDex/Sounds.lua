@@ -1,7 +1,8 @@
 -- Which game sound plays for each announce: a first catch and each shiny grade. The player
--- picks them in the sound window (UI/SoundPicker.lua). A sound is a SOUNDKIT key, or
--- "file:<id>" for a game sound file of the selection (SoundList.lua); never a file of
--- our own. A SOUNDKIT choice the client does not know falls back to the defaults.
+-- picks them in the sound window (UI/SoundPicker.lua). A sound is a SOUNDKIT key,
+-- "file:<id>" for a game sound file of the selection (SoundList.lua), or "lsm:<name>"
+-- for a sound another installed addon shares through LibSharedMedia (played from that
+-- addon's folder, never copied). We ship no sound file of our own.
 local _, ns = ...
 
 local Sounds = {}
@@ -9,8 +10,7 @@ ns.Sounds = Sounds
 
 Sounds.TARGETS = { "new", "rare", "epic", "legendary" }
 
--- Picked by renaud in game (2026-10-31), then fallbacks: the first one that plays wins
--- (a file this client lacks does not play, see Sounds.playFor).
+-- Picked by renaud in game (2026-10-31), then fallbacks (see Sounds.play for their limit).
 Sounds.DEFAULTS = {
     new = { "file:1067169", "UI_EPICLOOT_TOAST", "RAID_WARNING" }, -- chest unlocked
     rare = { "file:569143", "READY_CHECK" }, -- achievement
@@ -25,11 +25,33 @@ end
 local byFile = {}
 for _, s in ipairs(ns.SoundList) do byFile[s[1]] = s end
 
+-- LibSharedMedia, when another addon brought it; nil otherwise.
+local function lsm()
+    if type(LibStub) ~= "table" and type(LibStub) ~= "function" then return nil end
+    local ok, lib = pcall(LibStub, "LibSharedMedia-3.0", true)
+    return ok and type(lib) == "table" and lib or nil
+end
+
+local function sharedName(key)
+    return type(key) == "string" and key:match("^lsm:(.+)$") or nil
+end
+
+-- The path or file id a shared sound plays from, or nil when no addon shares it now.
+local function sharedPath(name)
+    local lib = lsm()
+    if not lib or type(lib.Fetch) ~= "function" then return nil end
+    local ok, path = pcall(lib.Fetch, lib, "sound", name, true)
+    if ok and (type(path) == "string" or type(path) == "number") and path ~= "" then return path end
+    return nil
+end
+
 -- A file of the selection is always offered (the client cannot tell whether it has it);
--- a SOUNDKIT key only when this client defines it.
+-- a shared sound while an addon shares it; a SOUNDKIT key when this client defines it.
 local function valid(soundkit, key)
     local id = fileID(key)
     if id then return byFile[id] ~= nil end
+    local name = sharedName(key)
+    if name then return sharedPath(name) ~= nil end
     return type(key) == "string" and type(soundkit) == "table" and type(soundkit[key]) == "number"
 end
 
@@ -76,8 +98,30 @@ function Sounds.selection(text)
     return out
 end
 
--- "UI_LEGENDARY_LOOT_TOAST" -> "Legendary loot toast"; a file -> "Group: its name".
+-- Sounds other addons share (LibSharedMedia), whose name contains `text`, sorted.
+-- "None" is LibSharedMedia's silent entry: left out.
+function Sounds.shared(text)
+    local out = {}
+    local lib = lsm()
+    if not lib or type(lib.List) ~= "function" then return out end
+    local ok, names = pcall(lib.List, lib, "sound")
+    if not ok or type(names) ~= "table" then return out end
+    local word = trimmed(text)
+    word = word and word:lower()
+    for _, name in ipairs(names) do
+        if type(name) == "string" and name ~= "None" and (not word or name:lower():find(word, 1, true)) then
+            out[#out + 1] = "lsm:" .. name
+        end
+    end
+    table.sort(out)
+    return out
+end
+
+-- "UI_LEGENDARY_LOOT_TOAST" -> "Legendary loot toast"; a file -> "Group: its name";
+-- a shared sound -> its name as the sharing addon gave it.
 function Sounds.label(key)
+    local shared = sharedName(key)
+    if shared then return shared end
     local id = fileID(key)
     if id then
         local s = byFile[id]
@@ -90,13 +134,19 @@ function Sounds.label(key)
     return text:sub(1, 1):upper() .. text:sub(2)
 end
 
--- Plays a sound; returns true when the client says it will play (PlaySound and
--- PlaySoundFile answer willPlay: false for a file this client does not have).
+-- Plays a sound; returns the client's willPlay. Measured on Retail 12.1.5 (2026-10-31):
+-- PlaySoundFile(1) answered true, so a missing file is NOT caught here; only a choice
+-- that is no longer valid (a SOUNDKIT key this client lacks, an uninstalled addon's
+-- sound) or a muted call falls through to the next default.
 function Sounds.play(key)
     if not valid(SOUNDKIT, key) then return false end
     local id = fileID(key)
     local ok, willPlay
-    if id then
+    local name = sharedName(key)
+    if name then
+        if type(PlaySoundFile) ~= "function" then return false end
+        ok, willPlay = pcall(PlaySoundFile, sharedPath(name), "Master")
+    elseif id then
         if type(PlaySoundFile) ~= "function" then return false end
         ok, willPlay = pcall(PlaySoundFile, id, "Master")
     else
@@ -106,8 +156,7 @@ function Sounds.play(key)
     return ok and willPlay ~= false
 end
 
--- The player's choice, else the defaults in order, until one plays: an announce is never
--- silent because a sound is missing from this client (Forever may lack recent files).
+-- The player's choice, else the defaults in order, until one plays.
 function Sounds.playFor(target)
     local tried = {}
     local chosen = ns.Main.db.settings.sounds[target]

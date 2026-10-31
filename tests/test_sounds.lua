@@ -61,6 +61,29 @@ H.test("a sound this client cannot play falls through to the next default", func
     H.eq(played, { 1514318, 775180, 567408 })
 end)
 
+H.test("sounds shared by other addons (LibSharedMedia) are listed, played from their path, never required", function()
+    local ns = load()
+    H.eq(ns.Sounds.shared(""), {}) -- no LibStub in plain Lua: nothing, no error
+    local played = {}
+    local media = { ["DBM: Air Horn"] = "Interface/AddOns/DBM-Core/sounds/AirHorn.ogg", None = "" }
+    local lib = {
+        List = function() return { "None", "DBM: Air Horn" } end,
+        Fetch = function(_, _, name) return media[name] end,
+    }
+    _G.LibStub = function(name) if name == "LibSharedMedia-3.0" then return lib end end
+    _G.PlaySoundFile = function(path) played[#played + 1] = path return true end
+    local ok, err = pcall(function()
+        H.eq(ns.Sounds.shared(""), { "lsm:DBM: Air Horn" })
+        H.eq(ns.Sounds.shared("horn"), { "lsm:DBM: Air Horn" })
+        H.eq(ns.Sounds.label("lsm:DBM: Air Horn"), "DBM: Air Horn")
+        H.truthy(ns.Sounds.play("lsm:DBM: Air Horn"))
+        H.eq(played, { media["DBM: Air Horn"] })
+        H.falsy(ns.Sounds.play("lsm:Gone")) -- addon removed: not valid, the default takes over
+    end)
+    _G.LibStub, _G.PlaySoundFile = nil, nil
+    if not ok then error(err, 0) end
+end)
+
 local function boot()
     local T = W.boot(H, { locale = "frFR" })
     T.sounds = {}
