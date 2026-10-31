@@ -329,6 +329,10 @@ local function showDetail(entries)
     if state.cat == "shiny" then
         f.status:SetText(best and L["GRADE_" .. best] or L.SHINY_NONE)
         paint(f.status, gradeRGB(best) or GREY)
+        -- What a shiny cost: every catch of this fish, against its shinies of any grade.
+        local fished = db.catches[e.id] and db.catches[e.id].count or 0
+        f.first:SetText(string.format(L.SHINY_RATIO, fished, ns.Shiny.total(db, e.id)))
+        paint(f.first, GREY)
     elseif caught then
         local c = db.catches[e.id]
         local when = type(c.first) == "number" and date("%d/%m/%Y", c.first) or "?"

@@ -51,6 +51,7 @@ local enUS = {
     SHINY_LINE = "%s: %d (first on %s)",
     SHINY_MISSING = "%s: none (%s per catch)",
     SHINY_TEST = "the next fish caught will be: %s",
+    SHINY_RATIO = "%d caught for %d shiny",
 }
 
 local frFR = {
@@ -99,6 +100,7 @@ local frFR = {
     SHINY_LINE = "%s : %d (premier le %s)",
     SHINY_MISSING = "%s : aucun (%s par prise)",
     SHINY_TEST = "le prochain poisson pêché sera : %s",
+    SHINY_RATIO = "%d pêchés pour %d shiny",
 }
 
 ns.LOCALES = { enUS = enUS, frFR = frFR }

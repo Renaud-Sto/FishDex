@@ -9,7 +9,6 @@ local L = ns.L
 
 -- First SOUNDKIT entry this client has wins.
 local SOUNDS = { "UI_EPICLOOT_TOAST", "UI_IG_STORE_PURCHASE_DELIVERED_TOAST_01", "RAID_WARNING" }
-local LEGENDARY_SOUNDS = { "UI_LEGENDARY_LOOT_TOAST", "UI_EPICLOOT_TOAST", "RAID_WARNING" }
 
 function Announce.itemText(itemID)
     local name = ns.Main.itemName(itemID) or L.UNKNOWN_NAME
@@ -50,12 +49,12 @@ function Announce.newCatch(itemID)
 end
 
 -- A shiny catch, in its grade's colour; "a first!" when this item reaches this grade
--- for the first time. Legendary has its own, louder sound.
+-- for the first time. Each grade has its own sound (Shiny.GRADES).
 function Announce.shiny(itemID, key, first)
     local g = ns.Shiny.grade(key)
     local rgb = g and g.color or { 1, 1, 1 }
     local text = string.format(L.SHINY_CATCH, L["GRADE_" .. key] or key, Announce.itemText(itemID))
     if first then text = text .. " " .. L.SHINY_FIRST end
     show(text, { r = rgb[1], g = rgb[2], b = rgb[3] })
-    if ns.Main.db.settings.sound then Announce.sound(key == "legendary" and LEGENDARY_SOUNDS or nil) end
+    if ns.Main.db.settings.sound then Announce.sound(g and g.sounds or nil) end
 end

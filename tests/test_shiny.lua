@@ -40,6 +40,8 @@ H.test("shiny records count per grade and the best grade wins", function()
     H.eq(done, 1)
     H.eq(#list, #ns.Dex.list(db, "fish") + #ns.Dex.list(db, "rare"))
     H.eq({ ns.Dex.progress(db, "shiny") }, { 1, #list })
+    H.eq(ns.Shiny.total(db, 6291), 3)
+    H.eq(ns.Shiny.total(db, 6303), 0)
 end)
 
 local function boot(roll)
@@ -51,7 +53,7 @@ local function boot(roll)
     env.GetLootSlotLink = function(i) return "|Hitem:" .. T.loot[i] .. "::|h[x]|h" end
     env.RaidWarningFrame = {}
     env.RaidNotice_AddMessage = function(_, text, color) T.notices[#T.notices + 1] = { text, color } end
-    env.SOUNDKIT = { UI_EPICLOOT_TOAST = 1, UI_LEGENDARY_LOOT_TOAST = 2 }
+    env.SOUNDKIT = { UI_EPICLOOT_TOAST = 1, UI_LEGENDARY_LOOT_TOAST = 2, READY_CHECK = 3 }
     env.PlaySound = function(id) T.sounds[#T.sounds + 1] = id end
     T.fire("ADDON_LOADED", H.ADDON)
     T.ns.Detect.roll = function() return roll end
@@ -76,6 +78,13 @@ H.test("a shiny catch is saved and announced in its grade colour instead of the 
     H.eq(T.sounds, { 2 })
     fish(T, 6291)
     H.falsy(T.notices[2][1]:find("une première", 1, true))
+end)
+
+H.test("each grade plays its own sound, falling back to the next key the client has", function()
+    local T = boot(0.99)
+    T.env.SlashCmdList.FISHDEX("shinytest shiny")
+    fish(T, 6291) -- new + shiny: only the shiny announce and sound
+    H.eq(T.sounds, { 3 })
 end)
 
 H.test("a normal roll leaves shinies alone; chests never roll", function()

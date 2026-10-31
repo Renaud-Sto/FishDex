@@ -8,10 +8,14 @@ ns.Shiny = Shiny
 
 -- Best grade first. chance = probability per catch (cumulative ranges, so the total
 -- shiny chance is the sum). color = the matching item quality colour.
+-- sounds = SOUNDKIT keys, the first one this client has plays (one sound per grade).
 Shiny.GRADES = {
-    { key = "legendary", chance = 0.0005, color = { 1, 0.5, 0 } },
-    { key = "rare", chance = 0.005, color = { 0.64, 0.21, 0.93 } },
-    { key = "shiny", chance = 0.02, color = { 0, 0.44, 0.87 } },
+    { key = "legendary", chance = 0.0005, color = { 1, 0.5, 0 },
+        sounds = { "UI_LEGENDARY_LOOT_TOAST", "UI_EPICLOOT_TOAST" } },
+    { key = "rare", chance = 0.005, color = { 0.64, 0.21, 0.93 },
+        sounds = { "UI_GARRISON_TOAST_MISSION_COMPLETE", "ACHIEVEMENT_MENU_OPEN" } },
+    { key = "shiny", chance = 0.02, color = { 0, 0.44, 0.87 },
+        sounds = { "UI_RAID_LOOT_TOAST_LESSER_ITEM_WON", "READY_CHECK" } },
 }
 Shiny.ELIGIBLE = { fish = true, rare = true }
 
@@ -59,6 +63,15 @@ function Shiny.best(db, itemID)
         if byGrade[g.key] then return g.key end
     end
     return nil
+end
+
+-- Shiny catches of an item, every grade together.
+function Shiny.total(db, itemID)
+    local n = 0
+    for _, c in pairs(db.shiny[itemID] or {}) do
+        if type(c) == "table" and type(c.count) == "number" then n = n + c.count end
+    end
+    return n
 end
 
 -- Eligible entries in data order, and how many have at least one shiny.
