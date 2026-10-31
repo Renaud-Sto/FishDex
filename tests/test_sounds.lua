@@ -20,12 +20,11 @@ end)
 H.test("the chosen sound wins when the client has it, else the first default it has", function()
     local ns = load()
     local db = ns.Dex.repair({})
-    H.eq(ns.Sounds.keyFor(db, "rare", KIT), "READY_CHECK")
+    H.eq(ns.Sounds.keyFor(db, "rare", KIT), "file:569143")
     db.settings.sounds.rare = "MAP_PING"
     H.eq(ns.Sounds.keyFor(db, "rare", KIT), "MAP_PING")
     db.settings.sounds.rare = "GONE_FROM_THIS_CLIENT"
-    H.eq(ns.Sounds.keyFor(db, "rare", KIT), "READY_CHECK")
-    H.eq(ns.Sounds.keyFor(db, "legendary", {}), nil)
+    H.eq(ns.Sounds.keyFor(db, "rare", KIT), "file:569143")
     H.eq(ns.Sounds.label("UI_LEGENDARY_LOOT_TOAST"), "Legendary loot toast")
 end)
 
@@ -43,14 +42,30 @@ H.test("the selection lists named game sound files and a chosen file plays with 
     db.settings.sounds.epic = "file:566564"
     H.eq(ns.Sounds.keyFor(db, "epic", KIT), "file:566564")
     db.settings.sounds.epic = "file:1" -- not in the selection: back to the default
-    H.eq(ns.Sounds.keyFor(db, "epic", KIT), "UI_GARRISON_TOAST_MISSION_COMPLETE")
+    H.eq(ns.Sounds.keyFor(db, "epic", KIT), "file:1489461")
+end)
+
+H.test("a sound this client cannot play falls through to the next default", function()
+    local T = W.boot(H, { locale = "frFR" })
+    T.fire("ADDON_LOADED", H.ADDON)
+    local played = {}
+    T.env.SOUNDKIT = KIT
+    -- Files from 700000 up are missing: PlaySoundFile answers false for them.
+    T.env.PlaySoundFile = function(id) played[#played + 1] = id return id < 700000 end
+    T.env.PlaySound = function(id) played[#played + 1] = "kit" .. id return true end
+    H.eq(T.ns.Sounds.playFor("epic"), "file:569143")
+    H.eq(played, { 1489461, 569143 })
+    T.env.FishDexDB.settings.sounds.legendary = "file:1514318" -- recent too
+    played = {}
+    H.eq(T.ns.Sounds.playFor("legendary"), "file:567408")
+    H.eq(played, { 1514318, 775180, 567408 })
 end)
 
 local function boot()
     local T = W.boot(H, { locale = "frFR" })
     T.sounds = {}
     T.env.SOUNDKIT = KIT
-    T.env.PlaySound = function(id) T.sounds[#T.sounds + 1] = id end
+    T.env.PlaySound = function(id) T.sounds[#T.sounds + 1] = id return true end
     T.env.PlaySoundFile = function(id) T.sounds[#T.sounds + 1] = "file" .. id end
     T.fire("ADDON_LOADED", H.ADDON)
     return T

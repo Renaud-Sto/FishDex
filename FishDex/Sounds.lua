@@ -9,12 +9,13 @@ ns.Sounds = Sounds
 
 Sounds.TARGETS = { "new", "rare", "epic", "legendary" }
 
--- First key this client has wins.
+-- Picked by renaud in game (2026-10-31), then fallbacks: the first one that plays wins
+-- (a file this client lacks does not play, see Sounds.playFor).
 Sounds.DEFAULTS = {
-    new = { "UI_EPICLOOT_TOAST", "RAID_WARNING" },
-    rare = { "UI_RAID_LOOT_TOAST_LESSER_ITEM_WON", "READY_CHECK" },
-    epic = { "UI_GARRISON_TOAST_MISSION_COMPLETE", "ACHIEVEMENT_MENU_OPEN" },
-    legendary = { "UI_LEGENDARY_LOOT_TOAST", "UI_EPICLOOT_TOAST" },
+    new = { "file:1067169", "UI_EPICLOOT_TOAST", "RAID_WARNING" }, -- chest unlocked
+    rare = { "file:569143", "READY_CHECK" }, -- achievement
+    epic = { "file:1489461", "file:569143", "UI_EPICLOOT_TOAST" }, -- legendary item
+    legendary = { "file:775180", "file:567408", "UI_EPICLOOT_TOAST" }, -- brawl won, PvP victory
 }
 
 local function fileID(key)
@@ -89,16 +90,36 @@ function Sounds.label(key)
     return text:sub(1, 1):upper() .. text:sub(2)
 end
 
+-- Plays a sound; returns true when the client says it will play (PlaySound and
+-- PlaySoundFile answer willPlay: false for a file this client does not have).
 function Sounds.play(key)
-    if not valid(SOUNDKIT, key) then return end
+    if not valid(SOUNDKIT, key) then return false end
     local id = fileID(key)
+    local ok, willPlay
     if id then
-        if type(PlaySoundFile) == "function" then pcall(PlaySoundFile, id, "Master") end
-    elseif type(PlaySound) == "function" then
-        pcall(PlaySound, SOUNDKIT[key], "Master")
+        if type(PlaySoundFile) ~= "function" then return false end
+        ok, willPlay = pcall(PlaySoundFile, id, "Master")
+    else
+        if type(PlaySound) ~= "function" then return false end
+        ok, willPlay = pcall(PlaySound, SOUNDKIT[key], "Master")
     end
+    return ok and willPlay ~= false
 end
 
+-- The player's choice, else the defaults in order, until one plays: an announce is never
+-- silent because a sound is missing from this client (Forever may lack recent files).
 function Sounds.playFor(target)
-    Sounds.play(Sounds.keyFor(ns.Main.db, target, SOUNDKIT))
+    local tried = {}
+    local chosen = ns.Main.db.settings.sounds[target]
+    if chosen then
+        tried[chosen] = true
+        if Sounds.play(chosen) then return chosen end
+    end
+    for _, key in ipairs(Sounds.DEFAULTS[target] or {}) do
+        if not tried[key] then
+            tried[key] = true
+            if Sounds.play(key) then return key end
+        end
+    end
+    return nil
 end

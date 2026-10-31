@@ -54,7 +54,8 @@ local function boot(roll)
     env.RaidWarningFrame = {}
     env.RaidNotice_AddMessage = function(_, text, color) T.notices[#T.notices + 1] = { text, color } end
     env.SOUNDKIT = { UI_EPICLOOT_TOAST = 1, UI_LEGENDARY_LOOT_TOAST = 2, READY_CHECK = 3 }
-    env.PlaySound = function(id) T.sounds[#T.sounds + 1] = id end
+    env.PlaySound = function(id) T.sounds[#T.sounds + 1] = id return true end
+    env.PlaySoundFile = function(id) T.sounds[#T.sounds + 1] = "file" .. id return true end
     T.fire("ADDON_LOADED", H.ADDON)
     T.ns.Detect.roll = function() return roll end
     return T
@@ -75,7 +76,7 @@ H.test("a shiny catch is saved and announced in its grade colour instead of the 
     H.truthy(T.notices[1][1]:find("Shiny légendaire", 1, true))
     H.truthy(T.notices[1][1]:find("une première", 1, true))
     H.eq(T.notices[1][2].g, 0.5)
-    H.eq(T.sounds, { 2 })
+    H.eq(T.sounds, { "file775180" })
     fish(T, 6291)
     H.falsy(T.notices[2][1]:find("une première", 1, true))
 end)
@@ -84,7 +85,7 @@ H.test("each grade plays its own sound, falling back to the next key the client 
     local T = boot(0.99)
     T.env.SlashCmdList.FISHDEX("shinytest rare")
     fish(T, 6291) -- new + shiny: only the shiny announce and sound
-    H.eq(T.sounds, { 3 })
+    H.eq(T.sounds, { "file569143" })
 end)
 
 H.test("a normal roll leaves shinies alone; chests never roll", function()
