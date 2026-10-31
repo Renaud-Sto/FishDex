@@ -48,26 +48,46 @@ function Detect.zoneName()
     return nil
 end
 
--- Reads the loot window when it is fishing loot; returns the item ids caught for the first time.
+-- The shiny roll, in [0, 1). forceNext (a grade key, set by /fishdex shinytest) makes
+-- the next eligible catch that grade, to check the announce without fishing for hours.
+Detect.roll = function() return math.random() end
+Detect.forceNext = nil
+
+local function shinyFor(entry)
+    if not ns.Shiny.eligible(entry) then return nil end
+    if Detect.forceNext then
+        local key = Detect.forceNext
+        Detect.forceNext = nil
+        return key
+    end
+    return ns.Shiny.fromRoll(Detect.roll())
+end
+
+-- Reads the loot window when it is fishing loot. Returns one record per catch worth
+-- telling: { id, new = first catch, grade = shiny grade or nil, newGrade = first of it }.
 function Detect.onLoot(db, now, clock)
     if handled then return {} end
     if not Detect.isFishingLoot(clock) then return {} end
     handled = true
-    local fresh = {}
+    local out = {}
     local zone = Detect.zoneName()
     for _, id in ipairs(Detect.lootItemIDs()) do
-        if ns.Dex.record(db, id, now, zone) then fresh[#fresh + 1] = id end
+        local isNew = ns.Dex.record(db, id, now, zone)
+        local grade = shinyFor(ns.Dex.entry(id))
+        local newGrade = grade and ns.Shiny.record(db, id, grade, now)
+        if isNew or grade then out[#out + 1] = { id = id, new = isNew, grade = grade, newGrade = newGrade } end
     end
-    return fresh
+    return out
 end
 
 function Detect.onEvent(event, a1, _, a3)
     local db = ns.Main and ns.Main.db
     if not db then return end
     if event == "LOOT_READY" or event == "LOOT_OPENED" then
-        local fresh = Detect.onLoot(db, time(), GetTime())
-        for _, id in ipairs(fresh) do ns.Announce.newCatch(id) end
-        if #fresh > 0 or handled then ns.Main.refresh() end
+        for _, c in ipairs(Detect.onLoot(db, time(), GetTime())) do
+            if c.grade then ns.Announce.shiny(c.id, c.grade, c.newGrade) else ns.Announce.newCatch(c.id) end
+        end
+        if handled then ns.Main.refresh() end
     elseif event == "LOOT_CLOSED" then
         handled = false
         Detect.lastFishingStop = nil

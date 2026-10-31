@@ -13,6 +13,7 @@ local Data = ns.Data
 Dex.DEFAULTS = {
     version = 1,
     catches = {},
+    shiny = {}, -- shiny[itemID][grade] = { count, first } (Shiny.lua)
     known = {},
     scanned = {},
     settings = { sound = true, announce = true, locale = "" }, -- locale "": the client's
@@ -36,6 +37,9 @@ end
 -- Repairs the saved data in place (WoW keeps a reference to the loaded table).
 function Dex.repair(db)
     fill(db, Dex.DEFAULTS)
+    for id, byGrade in pairs(db.shiny) do
+        if type(id) ~= "number" or type(byGrade) ~= "table" then db.shiny[id] = nil end
+    end
     -- Drop catch records the addon could not have written.
     for id, c in pairs(db.catches) do
         if type(id) ~= "number" or type(c) ~= "table" then
@@ -66,6 +70,7 @@ function Dex.isCaught(db, itemID) return db.catches[itemID] ~= nil end
 -- Entries of a category, in data order. "found" lists fished items missing from the data
 -- (fish Forever added or moved), by item id: they help correct the table.
 function Dex.list(db, cat)
+    if cat == "shiny" then return (ns.Shiny.list(db)) end
     local out = {}
     if cat == "found" then
         for id in pairs(db.catches) do
@@ -80,16 +85,23 @@ function Dex.list(db, cat)
     return out
 end
 
--- Tabs to show: every data category, plus "found" once there is something in it.
+-- Tabs to show: every data category, the shiny collection, plus "found" once there is
+-- something in it.
 function Dex.categories(db)
     local cats = {}
     for _, c in ipairs(Data.CATEGORIES) do cats[#cats + 1] = c end
+    cats[#cats + 1] = "shiny"
     if #Dex.list(db, "found") > 0 then cats[#cats + 1] = "found" end
     return cats
 end
 
 -- caught, total for one category (nil: the whole data table, discoveries excluded).
+-- For "shiny", caught = entries with at least one shiny catch.
 function Dex.progress(db, cat)
+    if cat == "shiny" then
+        local list, done = ns.Shiny.list(db)
+        return done, #list
+    end
     local caught, total = 0, 0
     for _, e in ipairs(cat and Dex.list(db, cat) or Data.ENTRIES) do
         total = total + 1

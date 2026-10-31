@@ -44,7 +44,7 @@ read_globals = {
     "CreateFrame", "GetLocale", "GetTime", "time", "issecretvalue", "C_Timer", "C_Item",
     "C_Map", "C_Spell", "C_TradeSkillUI", "UIParent", "DEFAULT_CHAT_FRAME", "UISpecialFrames",
     "GameTooltip", "PlaySound", "SOUNDKIT", "NORMAL_FONT_COLOR", "HIGHLIGHT_FONT_COLOR",
-    "DISABLED_FONT_COLOR", "IsFishingLoot", "GetNumLootItems", "GetLootSlotLink",
+    "DISABLED_FONT_COLOR", "GetFileIDFromPath", "IsFishingLoot", "GetNumLootItems", "GetLootSlotLink",
     "GetRealZoneText", "GetZoneText", "UnitName", "GetRealmName", "IsPlayerSpell",
     "RaidNotice_AddMessage", "RaidWarningFrame", "ChatTypeInfo", "UIErrorsFrame",
     "ButtonFrameTemplate_HideAttic", "ButtonFrameTemplate_HidePortrait",

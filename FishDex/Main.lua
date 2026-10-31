@@ -129,6 +129,12 @@ local function slash(msg)
         ns.setLocale(locale ~= "" and locale or GetLocale())
         Main.say(L.LANGUAGE_SET)
         Main.refresh()
+    elseif cmd == "shinytest" then
+        -- Not in the help: forces the next eligible catch to a grade, to see the announce.
+        local key = ((msg or ""):match("^%S+%s+(%S+)") or "shiny"):lower()
+        if not ns.Shiny.grade(key) then key = "shiny" end
+        ns.Detect.forceNext = key
+        Main.say(string.format(L.SHINY_TEST, L["GRADE_" .. key]))
     else
         Main.say(L.HELP)
     end

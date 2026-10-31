@@ -13,6 +13,7 @@ local COLS, ROWS, SLOT, GAP = 7, 7, 38, 4
 local GRID_W = COLS * (SLOT + GAP) - GAP
 local DETAIL_W = WIDTH - GRID_W - 52
 local DETAIL_LINES = 16
+local BORDER_FILE = "Interface\\Common\\WhiteIconFrame"
 
 local f              -- the window, nil until first open
 local state = { cat = "fish", selected = nil }
@@ -105,6 +106,13 @@ local function newSlot(parent, index)
     s.icon = s:CreateTexture(nil, "ARTWORK")
     s.icon:SetSize(SLOT - 4, SLOT - 4)
     s.icon:SetPoint("CENTER", s, "CENTER", 0, 0)
+    -- Shiny border: the game's item quality frame, tinted with the best shiny grade.
+    if type(GetFileIDFromPath) ~= "function" or GetFileIDFromPath(BORDER_FILE) then
+        s.border = s:CreateTexture(nil, "OVERLAY", nil, 1)
+        s.border:SetTexture(BORDER_FILE)
+        s.border:SetAllPoints(s.icon)
+        s.border:Hide()
+    end
     s.selected = s:CreateTexture(nil, "OVERLAY")
     s.selected:SetTexture("Interface\\Buttons\\CheckButtonHilight")
     s.selected:SetBlendMode("ADD")
@@ -241,6 +249,38 @@ local function rebuildTabs()
 end
 
 -- Detail lines: { text, rgb } pairs, cut to DETAIL_LINES.
+-- "2 %" / "0,05 %": a grade's chance per catch, in the addon's language.
+local function percent(chance)
+    local text = string.format("%g %%", chance * 100)
+    if L.CAT_fish == ns.LOCALES.frFR.CAT_fish then text = text:gsub("%.", ",") end
+    return text
+end
+
+local function gradeRGB(key)
+    local g = key and ns.Shiny.grade(key)
+    return g and g.color or nil
+end
+
+local function shinyLines(e)
+    local out = {}
+    local function add(text, rgb) out[#out + 1] = { text, rgb } end
+    add(L.WHERE, GOLD)
+    for _, z in ipairs(e.zones) do add("  " .. ns.Main.zoneName(z), WHITE) end
+    add(" ", WHITE)
+    add(L.SHINY_GRADES, GOLD)
+    local byGrade = ns.Main.db.shiny[e.id] or {}
+    for _, g in ipairs(ns.Shiny.GRADES) do
+        local c, name = byGrade[g.key], L["GRADE_" .. g.key]
+        if c then
+            local when = type(c.first) == "number" and date("%d/%m/%Y", c.first) or "?"
+            add("  " .. string.format(L.SHINY_LINE, name, c.count, when), g.color)
+        else
+            add("  " .. string.format(L.SHINY_MISSING, name, percent(g.chance)), GREY)
+        end
+    end
+    return out
+end
+
 local function detailLines(e, caught)
     local out = {}
     local function add(text, rgb) out[#out + 1] = { text, rgb } end
@@ -277,13 +317,19 @@ local function showDetail(entries)
     end
     local db = ns.Main.db
     local caught = Dex.isCaught(db, e.id)
+    local best = ns.Shiny.best(db, e.id)
+    if state.cat == "shiny" then caught = best ~= nil end
     f.bigIcon:SetTexture(ns.Main.itemIcon(e.id) or "Interface\\Icons\\INV_Misc_QuestionMark")
     f.bigIcon:SetDesaturated(not caught)
     f.bigIcon:SetVertexColor(caught and 1 or 0.35, caught and 1 or 0.35, caught and 1 or 0.35)
     f.bigIcon:Show()
-    f.name:SetText(caught and (ns.Main.itemName(e.id) or L.UNKNOWN_NAME) or L.UNKNOWN_NAME)
-    paint(f.name, caught and GOLD or GREY)
-    if caught then
+    local named = Dex.isCaught(db, e.id)
+    f.name:SetText(named and (ns.Main.itemName(e.id) or L.UNKNOWN_NAME) or L.UNKNOWN_NAME)
+    paint(f.name, gradeRGB(best) or (named and GOLD or GREY))
+    if state.cat == "shiny" then
+        f.status:SetText(best and L["GRADE_" .. best] or L.SHINY_NONE)
+        paint(f.status, gradeRGB(best) or GREY)
+    elseif caught then
         local c = db.catches[e.id]
         local when = type(c.first) == "number" and date("%d/%m/%Y", c.first) or "?"
         local first = string.format(L.FIRST_CATCH, when)
@@ -296,7 +342,7 @@ local function showDetail(entries)
         f.status:SetText(L.NOT_CAUGHT)
         paint(f.status, GREY)
     end
-    for i, line in ipairs(detailLines(e, caught)) do
+    for i, line in ipairs(state.cat == "shiny" and shinyLines(e) or detailLines(e, caught)) do
         if i > DETAIL_LINES then break end
         lines[i]:SetText(line[1])
         paint(lines[i], line[2])
@@ -313,13 +359,21 @@ function Window.refresh()
     local entries = Dex.list(db, state.cat)
     local caughtN, totalN = Dex.progress(db, state.cat)
     local allC, allT = Dex.progress(db)
-    f.progress:SetText(L["CAT_" .. state.cat] .. " - " .. string.format(L.PROGRESS, caughtN, totalN))
+    f.progress:SetText(L["CAT_" .. state.cat] .. " - "
+        .. string.format(state.cat == "shiny" and L.SHINY_PROGRESS or L.PROGRESS, caughtN, totalN))
     if type(f.SetTitle) == "function" then f:SetTitle(L.TITLE .. " - " .. string.format(L.TOTAL, allC, allT)) end
     for i, s in ipairs(slots) do
         local e = entries[i]
         s.entry = e
         if e then
+            local best = ns.Shiny.best(db, e.id)
             local caught = Dex.isCaught(db, e.id)
+            if state.cat == "shiny" then caught = best ~= nil end
+            if s.border then
+                local rgb = gradeRGB(best)
+                if rgb then s.border:SetVertexColor(rgb[1], rgb[2], rgb[3]) end
+                s.border:SetShown(rgb ~= nil)
+            end
             s.icon:SetTexture(ns.Main.itemIcon(e.id) or "Interface\\Icons\\INV_Misc_QuestionMark")
             s.icon:SetDesaturated(not caught)
             local v = caught and 1 or 0.3

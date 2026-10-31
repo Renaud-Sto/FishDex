@@ -2,7 +2,7 @@
 local H = ...
 
 local function load()
-    local ns = H.newNS("Locale", "Data", "Dex")
+    local ns = H.newNS("Locale", "Data", "Dex", "Shiny")
     return ns, ns.Dex.repair({})
 end
 
@@ -15,7 +15,7 @@ end)
 
 H.test("an item missing from the data is still recorded, in the discoveries tab", function()
     local ns, db = load()
-    H.eq(#ns.Dex.categories(db), 5)
+    H.eq(#ns.Dex.categories(db), 6)
     H.truthy(ns.Dex.record(db, 999999, 1, nil))
     local cats = ns.Dex.categories(db)
     H.eq(cats[#cats], "found")
@@ -35,7 +35,7 @@ H.test("progress counts per category", function()
 end)
 
 H.test("saved data is repaired in place and bad catch records are dropped", function()
-    local ns = H.newNS("Locale", "Data", "Dex")
+    local ns = H.newNS("Locale", "Data", "Dex", "Shiny")
     local saved = { catches = { [6291] = { count = "x" }, bad = 3 }, settings = { sound = "yes" } }
     local db = ns.Dex.repair(saved)
     H.truthy(db == saved)
@@ -54,7 +54,7 @@ H.test("recipe state: unscanned until a profession window was read, then known o
 end)
 
 H.test("every entry has a known category, zones from the zone table and recipes from the recipe table", function()
-    local ns = H.newNS("Locale", "Data", "Dex")
+    local ns = H.newNS("Locale", "Data", "Dex", "Shiny")
     local cats, ids = {}, {}
     for _, c in ipairs(ns.Data.CATEGORIES) do cats[c] = true end
     for _, e in ipairs(ns.Data.ENTRIES) do

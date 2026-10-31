@@ -12,6 +12,7 @@
 Locale.lua
 Data.lua
 Dex.lua
+Shiny.lua
 Detect.lua
 Announce.lua
 Main.lua

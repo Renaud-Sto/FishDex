@@ -39,6 +39,18 @@ local enUS = {
     ANNOUNCE_ON = "new catch announce on",
     ANNOUNCE_OFF = "new catch announce off",
     LANGUAGE_SET = "addon texts in English (/fishdex auto: client language)",
+    CAT_shiny = "Shiny",
+    GRADE_shiny = "Shiny",
+    GRADE_rare = "Rare shiny",
+    GRADE_legendary = "Legendary shiny",
+    SHINY_CATCH = "%s: %s!",
+    SHINY_FIRST = "(a first!)",
+    SHINY_PROGRESS = "%d / %d with a shiny",
+    SHINY_NONE = "No shiny yet",
+    SHINY_GRADES = "Shiny catches",
+    SHINY_LINE = "%s: %d (first on %s)",
+    SHINY_MISSING = "%s: none (%s per catch)",
+    SHINY_TEST = "the next fish caught will be: %s",
 }
 
 local frFR = {
@@ -75,6 +87,18 @@ local frFR = {
     ANNOUNCE_ON = "annonce des nouvelles prises activée",
     ANNOUNCE_OFF = "annonce des nouvelles prises désactivée",
     LANGUAGE_SET = "textes de l'addon en français (/fishdex auto : langue du client)",
+    CAT_shiny = "Shiny",
+    GRADE_shiny = "Shiny",
+    GRADE_rare = "Shiny rare",
+    GRADE_legendary = "Shiny légendaire",
+    SHINY_CATCH = "%s : %s !",
+    SHINY_FIRST = "(une première !)",
+    SHINY_PROGRESS = "%d / %d avec un shiny",
+    SHINY_NONE = "Aucun shiny pour l'instant",
+    SHINY_GRADES = "Prises shiny",
+    SHINY_LINE = "%s : %d (premier le %s)",
+    SHINY_MISSING = "%s : aucun (%s par prise)",
+    SHINY_TEST = "le prochain poisson pêché sera : %s",
 }
 
 ns.LOCALES = { enUS = enUS, frFR = frFR }
