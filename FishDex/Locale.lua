@@ -72,7 +72,7 @@ local enUS = {
     SOUND_GROUP_bell = "Bell",
     SOUND_GROUP_fishing = "Fishing",
     SOUND_EMPTY = "No sound matches",
-    SOUND_POSITION = "%d-%d of %d (mouse wheel to scroll)",
+    SOUND_POSITION = "%d-%d of %d (wheel)",
     SOUND_USE = "Use this sound",
     SOUND_RESET = "Default",
 }
@@ -144,7 +144,7 @@ local frFR = {
     SOUND_GROUP_bell = "Cloche",
     SOUND_GROUP_fishing = "Pêche",
     SOUND_EMPTY = "Aucun son ne correspond",
-    SOUND_POSITION = "%d-%d sur %d (molette pour défiler)",
+    SOUND_POSITION = "%d-%d sur %d (molette)",
     SOUND_USE = "Utiliser ce son",
     SOUND_RESET = "Par défaut",
 }

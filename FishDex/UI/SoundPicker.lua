@@ -163,6 +163,10 @@ local function build()
         SoundPicker.refresh()
     end, raise)
     p.reset:SetPoint("RIGHT", p.use, "LEFT", -6, 0)
+    -- Cut before the buttons: the long English text ran under "Default" (seen 2026-10-31).
+    p.position:SetWidth(WIDTH - 24 - 6 - (150 + 6 + 100 + 14 + 8))
+    p.position:SetJustifyH("LEFT")
+    p.position:SetWordWrap(false)
     p:HookScript("OnShow", function() SoundPicker.refresh() end)
 
     relist()
