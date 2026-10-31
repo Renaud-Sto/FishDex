@@ -16,7 +16,7 @@ Dex.DEFAULTS = {
     shiny = {}, -- shiny[itemID][grade] = { count, first } (Shiny.lua)
     known = {},
     scanned = {},
-    settings = { sound = true, announce = true, locale = "" }, -- locale "": the client's
+    settings = { sound = true, announce = true, locale = "", sounds = {} }, -- sounds[target] = SOUNDKIT key -- locale "": the client's
 }
 
 local byID = {}

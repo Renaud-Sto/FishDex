@@ -7,16 +7,12 @@ local Shiny = {}
 ns.Shiny = Shiny
 
 -- Grades named after the game's item qualities (renaud, 2026-10-31): rare (blue), epic
--- (purple), legendary (orange). Best grade first. chance = probability per catch (cumulative ranges, so the total
--- shiny chance is the sum). color = the matching item quality colour.
--- sounds = SOUNDKIT keys, the first one this client has plays (one sound per grade).
+-- (purple), legendary (orange). Best grade first. chance = probability per catch
+-- (cumulative ranges, so the total shiny chance is the sum). color = the quality colour.
 Shiny.GRADES = {
-    { key = "legendary", chance = 0.0005, color = { 1, 0.5, 0 },
-        sounds = { "UI_LEGENDARY_LOOT_TOAST", "UI_EPICLOOT_TOAST" } },
-    { key = "epic", chance = 0.005, color = { 0.64, 0.21, 0.93 },
-        sounds = { "UI_GARRISON_TOAST_MISSION_COMPLETE", "ACHIEVEMENT_MENU_OPEN" } },
-    { key = "rare", chance = 0.02, color = { 0, 0.44, 0.87 },
-        sounds = { "UI_RAID_LOOT_TOAST_LESSER_ITEM_WON", "READY_CHECK" } },
+    { key = "legendary", chance = 0.0005, color = { 1, 0.5, 0 } },
+    { key = "epic", chance = 0.005, color = { 0.64, 0.21, 0.93 } },
+    { key = "rare", chance = 0.02, color = { 0, 0.44, 0.87 } },
 }
 Shiny.ELIGIBLE = { fish = true, quest = true }
 

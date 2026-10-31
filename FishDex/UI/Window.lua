@@ -20,38 +20,16 @@ local state = { cat = "fish", selected = nil }
 local slots, tabs, lines = {}, {}, {}
 local pending = false
 
-local function color(c, fallback)
-    if type(c) == "table" and type(c.GetRGB) == "function" then
-        local ok, r, g, b = pcall(c.GetRGB, c)
-        if ok then return r, g, b end
-    end
-    return fallback[1], fallback[2], fallback[3]
-end
-local GOLD = { color(NORMAL_FONT_COLOR, { 1, 0.82, 0 }) }
-local WHITE = { color(HIGHLIGHT_FONT_COLOR, { 1, 1, 1 }) }
-local GREY = { color(DISABLED_FONT_COLOR, { 0.5, 0.5, 0.5 }) }
+local Kit = ns.Kit
+local GOLD, WHITE, GREY = Kit.GOLD, Kit.WHITE, Kit.GREY
 local GREEN = { 0.25, 0.9, 0.25 }
 local RED = { 0.9, 0.3, 0.3 }
-
-local function paint(fs, rgb) fs:SetTextColor(rgb[1], rgb[2], rgb[3]) end
+local paint = Kit.paint
 
 local function raiseWindow() if f then f:Raise() end end
 
 local function button(parent, w, h, text, onClick)
-    local b = CreateFrame("Button", nil, nil, "UIPanelButtonTemplate")
-    b:SetParent(parent)
-    b:SetSize(w, h)
-    local label = type(b.Text) == "table" and b.Text or b:GetFontString()
-    if type(label) == "table" then
-        label:ClearAllPoints()
-        label:SetPoint("LEFT", b, "LEFT", 6, 0)
-        label:SetPoint("RIGHT", b, "RIGHT", -6, 0)
-        label:SetWordWrap(false)
-    end
-    b:SetText(text)
-    b:SetScript("OnClick", onClick)
-    b:HookScript("OnMouseDown", raiseWindow)
-    return b
+    return Kit.button(parent, w, h, text, onClick, raiseWindow)
 end
 
 local function check(parent, text, key)
@@ -222,6 +200,8 @@ local function build()
     f.sound:SetPoint("BOTTOMLEFT", f, "BOTTOMLEFT", 16, 10)
     f.announce = check(f, L.OPT_ANNOUNCE, "announce")
     f.announce:SetPoint("LEFT", f.sound, "RIGHT", 90, 0)
+    f.soundsButton = button(f, 110, 22, L.SOUNDS_BUTTON, function() ns.SoundPicker.toggle() end)
+    f.soundsButton:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", -14, 10)
 end
 
 local function rebuildTabs()
@@ -389,6 +369,7 @@ function Window.refresh()
         end
     end
     showDetail(entries)
+    f.soundsButton:SetText(L.SOUNDS_BUTTON)
     for _, c in ipairs({ { f.sound, L.OPT_SOUND }, { f.announce, L.OPT_ANNOUNCE } }) do
         if type(c[1].Text) == "table" then c[1].Text:SetText(c[2]) end
     end
@@ -417,3 +398,5 @@ function Window.toggle()
 end
 
 function Window.isShown() return f ~= nil and f:IsShown() end
+
+function Window.frame() return f end

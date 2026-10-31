@@ -13,7 +13,10 @@ Locale.lua
 Data.lua
 Dex.lua
 Shiny.lua
+Sounds.lua
 Detect.lua
 Announce.lua
 Main.lua
+UI/Kit.lua
 UI/Window.lua
+UI/SoundPicker.lua
