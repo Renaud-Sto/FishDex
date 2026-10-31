@@ -6,10 +6,10 @@ local _, ns = ...
 local Detect = {}
 ns.Detect = Detect
 
--- Fishing ranks (Classic ids; 131474 is Retail's single spell). A loot window that opens
+-- Fishing ranks (Classic ids; Retail 12.1.5 channels 131476, measured 2026-10-31). A loot window that opens
 -- right after the player's own fishing channel ends is fishing loot even if
 -- IsFishingLoot is missing on this client.
-local FISHING_SPELLS = { [7620] = true, [7731] = true, [7732] = true, [18248] = true, [131474] = true }
+local FISHING_SPELLS = { [7620] = true, [7731] = true, [7732] = true, [18248] = true, [131474] = true, [131476] = true }
 local CHANNEL_GRACE = 3 -- seconds between the end of the channel and the loot window
 
 Detect.lastFishingStop = nil
