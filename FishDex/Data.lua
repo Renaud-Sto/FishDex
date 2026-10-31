@@ -6,7 +6,7 @@ local _, ns = ...
 local Data = {}
 ns.Data = Data
 
-Data.CATEGORIES = { "fish", "rare", "trophy", "wreck", "item" }
+Data.CATEGORIES = { "fish", "quest", "trophy", "wreck", "item" }
 
 -- AreaTable zone id -> English name (C_Map.GetAreaInfo gives the localized one).
 Data.ZONES = {
@@ -111,10 +111,10 @@ Data.ENTRIES = {
     { id = 13422, cat = "fish", name = "Stonescale Eel", zones = { 16, 440, 357, 139, 47 }, recipes = { 17551 } },
     { id = 13890, cat = "fish", name = "Plated Armorfish", zones = { 618, 10, 139, 41 }, recipes = {  } },
     { id = 6299, cat = "fish", name = "Sickly Looking Fish", zones = { 1497, 85, 130, 331, 1657 }, recipes = {  } },
-    { id = 6717, cat = "rare", name = "Gaffer Jack", zones = { 148 }, recipes = {  } },
-    { id = 1467, cat = "rare", name = "Spotted Sunfish", zones = { 44 }, recipes = {  } },
-    { id = 19975, cat = "rare", name = "Zulian Mudskunk", zones = { 12, 1377, 618, 10, 40, 1497, 85, 1637 }, recipes = {  } },
-    { id = 16970, cat = "rare", name = "Misty Reed Mahi Mahi", zones = { 8 }, recipes = {  } },
+    { id = 6717, cat = "quest", name = "Gaffer Jack", zones = { 148 }, recipes = {  } },
+    { id = 1467, cat = "quest", name = "Spotted Sunfish", zones = { 44 }, recipes = {  } },
+    { id = 19975, cat = "quest", name = "Zulian Mudskunk", zones = { 12, 1377, 618, 10, 40, 1497, 85, 1637 }, recipes = {  } },
+    { id = 16970, cat = "quest", name = "Misty Reed Mahi Mahi", zones = { 8 }, recipes = {  } },
     { id = 6292, cat = "trophy", name = "10 Pound Mud Snapper", zones = { 215, 40, 85, 12 }, recipes = {  } },
     { id = 6294, cat = "trophy", name = "12 Pound Mud Snapper", zones = { 10, 12, 40, 141 }, recipes = {  } },
     { id = 6295, cat = "trophy", name = "15 Pound Mud Snapper", zones = { 14, 12 }, recipes = {  } },

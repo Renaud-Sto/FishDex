@@ -18,7 +18,7 @@ Shiny.GRADES = {
     { key = "rare", chance = 0.02, color = { 0, 0.44, 0.87 },
         sounds = { "UI_RAID_LOOT_TOAST_LESSER_ITEM_WON", "READY_CHECK" } },
 }
-Shiny.ELIGIBLE = { fish = true, rare = true }
+Shiny.ELIGIBLE = { fish = true, quest = true }
 
 local rank = {}
 for i, g in ipairs(Shiny.GRADES) do rank[g.key] = i end

@@ -221,6 +221,36 @@ cmds.spell = function(arg)
     end
 end
 
+-- Sound audition: /fdp sounds [word] lists the SOUNDKIT keys that sound like a reward
+-- (or contain `word`); /fdp sound plays the next one, /fdp sound <n> plays number n.
+local soundList, soundIndex = {}, 0
+local SOUND_WORDS = { "TOAST", "FANFARE", "ACHIEVEMENT", "REWARD", "LOOT", "LEVEL", "COMPLETE",
+    "CHEER", "LEGENDARY", "EPIC", "TREASURE", "UNLOCK", "COLLECTION", "SPARKLE", "CHIME" }
+cmds.sounds = function(arg)
+    soundList, soundIndex = {}, 0
+    if type(SOUNDKIT) ~= "table" then out("SOUNDKIT missing") return end
+    local words = arg ~= "" and { arg:upper() } or SOUND_WORDS
+    for key, id in pairs(SOUNDKIT) do
+        if type(key) == "string" and type(id) == "number" then
+            for _, w in ipairs(words) do
+                if key:find(w, 1, true) then soundList[#soundList + 1] = key break end
+            end
+        end
+    end
+    table.sort(soundList)
+    for i, key in ipairs(soundList) do logLine(string.format("sound %d %s %d", i, key, SOUNDKIT[key])) end
+    out(#soundList, "sounds found. /fdp sound to hear the next one, /fdp sound <n> for number n")
+end
+cmds.sound = function(arg)
+    if #soundList == 0 then cmds.sounds("") end
+    local n = tonumber(arg) or (soundIndex % #soundList) + 1
+    local key = soundList[n]
+    if not key then out("no sound", n) return end
+    soundIndex = n
+    PlaySound(SOUNDKIT[key], "Master")
+    out(string.format("[%d/%d] %s", n, #soundList, key))
+end
+
 -- /fdp all: every question at once (zones, recipes, items, APIs).
 cmds.all = function()
     cmds.client("")
@@ -249,7 +279,7 @@ SlashCmdList.FISHDEXPROBE = function(msg)
         cmds[cmd](arg)
     else
         out("commands: client | api <path...> | atlas <name...> | file <path>"
-            .. " | template <Type> <Template> | item <id...> | area <id...> | spell <id...> | all | watch on|off | log | clear")
+            .. " | template <Type> <Template> | item <id...> | area <id...> | spell <id...> | all | sounds [word] | sound [n] | watch on|off | log | clear")
     end
 end
 out("loaded. /fdp for commands. Lua errors on screen: /console scriptErrors 1")
