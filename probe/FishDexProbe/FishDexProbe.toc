@@ -1,4 +1,4 @@
-## Interface: 16001
+## Interface: 16001, 120105
 ## Title: FishDex Probe
 ## Notes: THROWAWAY. Prints what the client really returns. Never ship.
 ## Author: renaud
