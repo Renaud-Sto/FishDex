@@ -1,6 +1,6 @@
--- The Guild tab of the dex window: the ranking as a table in an inset (header buttons sort
--- by their column, the wheel scrolls), this account's row in gold, shiny columns in their
--- grade colour. Built by Window on first open.
+-- The Guild tab of the dex window: the ranking as a table on the window's background
+-- (header buttons sort by their column, the wheel scrolls), this account's row in gold,
+-- shiny columns in their grade colour. Built by Window on first open.
 local _, ns = ...
 
 local BoardView = {}
@@ -10,16 +10,16 @@ local L, Kit = ns.L, ns.Kit
 local GOLD, WHITE, GREY = Kit.GOLD, Kit.WHITE, Kit.GREY
 local paint = Kit.paint
 
-local ROW_H, VISIBLE = 18, 14
+local ROW_H, VISIBLE = 18, 20
 -- key (sort key; nil: not sortable), width, label key, justify.
 local COLUMNS = {
-    { width = 32, label = "COL_RANK", justify = "RIGHT" },
-    { key = "name", width = 170, label = "COL_NAME", justify = "LEFT" },
+    { width = 40, label = "COL_RANK", justify = "RIGHT" },
+    { key = "name", width = 200, label = "COL_NAME", justify = "LEFT" },
     { key = "total", width = 80, label = "COL_TOTAL", justify = "RIGHT" },
     { key = "rare", width = 76, label = "COL_RARE", justify = "RIGHT" },
     { key = "epic", width = 76, label = "COL_EPIC", justify = "RIGHT" },
     { key = "legendary", width = 92, label = "COL_LEGENDARY", justify = "RIGHT" },
-    { width = 92, label = "COL_SEEN", justify = "RIGHT" },
+    { width = 88, label = "COL_SEEN", justify = "RIGHT" },
 }
 
 local v              -- the view, nil until built
@@ -33,15 +33,11 @@ local function gradeRGB(key)
 end
 
 function BoardView.build(parent, raise)
-    v = CreateFrame("Frame", nil, nil, "InsetFrameTemplate")
-    v:SetParent(parent)
-    v:SetPoint("TOPLEFT", parent, "TOPLEFT", 14, -78)
-    v:SetPoint("BOTTOMRIGHT", parent, "BOTTOMRIGHT", -12, 40)
+    v = CreateFrame("Frame", nil, parent)
+    v:SetPoint("TOPLEFT", parent, "TOPLEFT", 16, -12)
+    v:SetPoint("BOTTOMRIGHT", parent, "BOTTOMRIGHT", -16, 40)
     v:Hide()
-    local face = CreateFrame("Frame", nil, v)
-    face:SetAllPoints(v)
-    face:SetFrameLevel((v:GetFrameLevel() or 1) + 1)
-    v.face = face
+    local face = v
 
     local x = 8
     for c, col in ipairs(COLUMNS) do

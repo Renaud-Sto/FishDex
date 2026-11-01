@@ -50,6 +50,7 @@ read_globals = {
     "ButtonFrameTemplate_HideAttic", "ButtonFrameTemplate_HidePortrait",
     "ButtonFrameTemplate_HideButtonBar", "SOUNDKIT",
     "Enum", "C_ChatInfo", "IsInGuild", "GetGuildInfo", "Ambiguate",
+    "C_Texture", "PanelTemplates_SetNumTabs", "PanelTemplates_SetTab", "PanelTemplates_TabResize",
     -- SlashCmdList is read-only as a whole; the addon may assign only its own handler.
     SlashCmdList = { other_fields = true, fields = { FISHDEX = { read_only = false } } },
 }

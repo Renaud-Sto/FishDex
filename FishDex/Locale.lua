@@ -93,6 +93,10 @@ local enUS = {
     COL_EPIC = "Epic",
     COL_LEGENDARY = "Legendary",
     COL_SEEN = "Updated",
+    TAB_dex = "Collection",
+    TAB_shiny = "Shiny",
+    TAB_board = "Guild",
+    PAGE = "Page %d/%d",
 }
 
 local frFR = {
@@ -183,6 +187,10 @@ local frFR = {
     COL_EPIC = "Épiques",
     COL_LEGENDARY = "Légendaires",
     COL_SEEN = "Mis à jour",
+    TAB_dex = "Collection",
+    TAB_shiny = "Shiny",
+    TAB_board = "Guilde",
+    PAGE = "Page %d/%d",
 }
 
 ns.LOCALES = { enUS = enUS, frFR = frFR }

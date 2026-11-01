@@ -129,11 +129,11 @@ H.test("a member's score is saved for the guild and shown in the Guild tab; a he
     H.truthy(T.sent[1][2]:match("^S%^"))
     T.env.SlashCmdList.FISHDEX("")
     local tab
-    for _, fr in ipairs(T.frames) do if rawget(fr, "cat") == "board" then tab = fr end end
+    for _, fr in ipairs(T.frames) do if rawget(fr, "tab") == "board" then tab = fr end end
     H.truthy(tab)
     rawget(tab, "scripts").OnClick(tab)
     local win = T.env.FishDexWindow
-    H.truthy(rawget(win, "progress").text:find("3 pêcheurs", 1, true))
+    H.truthy(rawget(win, "header").text:find("3 pêcheurs", 1, true))
     H.falsy(rawget(win, "grid").shown)
 end)
 

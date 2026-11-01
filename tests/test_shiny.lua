@@ -113,14 +113,18 @@ H.test("the shiny tab opens and shows one slot per eligible entry", function()
     T.env.SlashCmdList.FISHDEX("")
     local win = T.env.FishDexWindow
     local shinyTab
-    for _, fr in ipairs(T.frames) do if rawget(fr, "cat") == "shiny" then shinyTab = fr end end
+    for _, fr in ipairs(T.frames) do if rawget(fr, "tab") == "shiny" then shinyTab = fr end end
     H.truthy(shinyTab)
     rawget(shinyTab, "scripts").OnClick(shinyTab)
     local shown = 0
     for _, fr in ipairs(T.frames) do
         if fr.kind == "Button" and rawget(fr, "parent") == rawget(win, "grid") and fr.shown then shown = shown + 1 end
     end
-    H.eq(shown, #T.ns.Shiny.list(T.env.FishDexDB))
+    H.eq(shown, math.min(14, #T.ns.Shiny.list(T.env.FishDexDB)))
+    -- the next page shows the rest
+    local next = rawget(win, "next")
+    rawget(next, "scripts").OnClick(next)
+    H.truthy(rawget(win, "pageText").text:find("Page 2/", 1, true))
 end)
 
 H.test("saved shinies of version 1 are renamed to the new grades", function()

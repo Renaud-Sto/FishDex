@@ -88,7 +88,8 @@ H.test("nothing is printed at login; the window opens and shows a slot per entry
     for _, fr in ipairs(T.frames) do
         if fr.kind == "Button" and rawget(fr, "parent") == rawget(win, "grid") and fr.shown then shown = shown + 1 end
     end
-    H.eq(shown, #T.ns.Dex.list(T.env.FishDexDB, "fish"))
+    H.eq(shown, math.min(14, #T.ns.Dex.list(T.env.FishDexDB, "fish"))) -- one page
+    H.truthy(rawget(win, "pageText").text:find("Page 1/", 1, true))
     T.env.SlashCmdList.FISHDEX("")
     H.falsy(win:IsShown())
 end)

@@ -1,6 +1,9 @@
--- The dex window: the game's panel (ButtonFrameTemplate), one tab button per category, a
--- grid of item slots (caught: bright icon; not caught: dark, desaturated) and a detail
--- inset for the selected slot. Built on first open, refreshed only while shown.
+-- The dex window, laid out like the game's Collections journal (Toy Box): portrait panel,
+-- warm collections background, three tabs under the window (Collection, Shiny, Guild),
+-- category buttons and a progress bar in the top strip, pages of item buttons with their
+-- names, and the detail of the selected entry on the right. Built on first open,
+-- refreshed only while shown. renaud, 2026-11-01: one row of eight tabs was too many and
+-- the dark insets too cold.
 local _, ns = ...
 
 local Window = {}
@@ -8,16 +11,20 @@ ns.Window = Window
 
 local L, Dex = ns.L, ns.Dex
 
-local WIDTH, HEIGHT = 660, 452
-local COLS, ROWS, SLOT, GAP = 7, 7, 38, 4
-local GRID_W = COLS * (SLOT + GAP) - GAP
-local DETAIL_W = WIDTH - GRID_W - 52
+local WIDTH, HEIGHT = 703, 560
+local COLS, ROWS = 2, 7
+local PER_PAGE = COLS * ROWS
+local CELL_W, CELL_H = 205, 58
+local DETAIL_X = 440                       -- left edge of the detail column in the content
 local DETAIL_LINES = 16
+local CAT_SIZE = 30
 local BORDER_FILE = "Interface\\Common\\WhiteIconFrame"
+local SLOT_FILE = "Interface\\Buttons\\UI-Quickslot2"
+local TABS = { "dex", "shiny", "board" }
 
 local f              -- the window, nil until first open
-local state = { cat = "fish", selected = nil }
-local slots, tabs, lines = {}, {}, {}
+local state = { tab = "dex", cat = "fish", selected = nil, page = 1 }
+local slots, catButtons, lines, tabs = {}, {}, {}, {}
 local pending = false
 
 local Kit = ns.Kit
@@ -30,6 +37,12 @@ local function raiseWindow() if f then f:Raise() end end
 
 local function button(parent, w, h, text, onClick)
     return Kit.button(parent, w, h, text, onClick, raiseWindow)
+end
+
+local function sound(key)
+    if type(PlaySound) == "function" and type(SOUNDKIT) == "table" and SOUNDKIT[key] then
+        pcall(PlaySound, SOUNDKIT[key])
+    end
 end
 
 local function check(parent, text, key)
@@ -49,13 +62,18 @@ local function check(parent, text, key)
         -- Sharing back on: the guild gets the score now rather than after the next fishing.
         if key == "share" and on then ns.Comm.queue("S", true) end
         if key == "share" then Window.refresh() end
-        if type(PlaySound) == "function" and type(SOUNDKIT) == "table" then
-            local id = on and SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON or SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_OFF
-            if id then pcall(PlaySound, id) end
-        end
+        sound(on and "IG_MAINMENU_OPTION_CHECKBOX_ON" or "IG_MAINMENU_OPTION_CHECKBOX_OFF")
     end)
     c.key = key
     return c
+end
+
+-- What the grid lists on the current tab.
+local function listCat() return state.tab == "shiny" and "shiny" or state.cat end
+
+local function caughtHere(db, e)
+    if state.tab == "shiny" then return ns.Shiny.best(db, e.id) ~= nil end
+    return Dex.isCaught(db, e.id)
 end
 
 -- Item tooltip for a caught entry; only zones for one not caught yet.
@@ -75,45 +93,136 @@ local function showTooltip(slot)
     GameTooltip:Show()
 end
 
+local function hideTooltip() if type(GameTooltip) == "table" then GameTooltip:Hide() end end
+
+-- One collection button: the Toy Box's slot (icon in the collected or uncollected
+-- border, name on the right), plus a border tinted with the best shiny grade.
 local function newSlot(parent, index)
     local s = CreateFrame("Button", nil, parent)
-    s:SetSize(SLOT, SLOT)
+    s:SetSize(50, 50)
     local col, row = (index - 1) % COLS, math.floor((index - 1) / COLS)
-    s:SetPoint("TOPLEFT", parent, "TOPLEFT", col * (SLOT + GAP), -row * (SLOT + GAP))
-    local frameTex = s:CreateTexture(nil, "BACKGROUND")
-    frameTex:SetTexture("Interface\\Buttons\\UI-Quickslot2")
-    frameTex:SetSize(SLOT * 64 / 37, SLOT * 64 / 37)
-    frameTex:SetPoint("CENTER", s, "CENTER", 0, 0)
+    s:SetPoint("TOPLEFT", parent, "TOPLEFT", col * CELL_W, -row * CELL_H)
     s.icon = s:CreateTexture(nil, "ARTWORK")
-    s.icon:SetSize(SLOT - 4, SLOT - 4)
-    s.icon:SetPoint("CENTER", s, "CENTER", 0, 0)
-    -- Shiny border: the game's item quality frame, tinted with the best shiny grade.
+    s.icon:SetSize(42, 42)
+    s.icon:SetPoint("CENTER", s, "CENTER", 0, 1)
+    s.icon:SetTexCoord(0.04, 0.96, 0.04, 0.96)
+    s.frameOn = s:CreateTexture(nil, "OVERLAY", nil, 1)
+    s.frameOn:SetPoint("CENTER", s, "CENTER", 0, 0)
+    Kit.art(s.frameOn, "collections-itemborder-collected", 56, 56, SLOT_FILE)
+    s.frameOff = s:CreateTexture(nil, "OVERLAY", nil, 1)
+    s.frameOff:SetPoint("CENTER", s, "CENTER", 0, 2)
+    Kit.art(s.frameOff, "collections-itemborder-uncollected", 50, 50, SLOT_FILE)
     if type(GetFileIDFromPath) ~= "function" or GetFileIDFromPath(BORDER_FILE) then
-        s.border = s:CreateTexture(nil, "OVERLAY", nil, 1)
+        s.border = s:CreateTexture(nil, "OVERLAY", nil, 2)
         s.border:SetTexture(BORDER_FILE)
         s.border:SetAllPoints(s.icon)
         s.border:Hide()
     end
-    s.selected = s:CreateTexture(nil, "OVERLAY")
+    s.selected = s:CreateTexture(nil, "OVERLAY", nil, 3)
     s.selected:SetTexture("Interface\\Buttons\\CheckButtonHilight")
     s.selected:SetBlendMode("ADD")
     s.selected:SetAllPoints(s.icon)
     s.selected:Hide()
     s:SetHighlightTexture("Interface\\Buttons\\ButtonHilight-Square", "ADD")
+    s.name = s:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    s.name:SetPoint("LEFT", s, "RIGHT", 9, 3)
+    s.name:SetWidth(CELL_W - 64)
+    s.name:SetJustifyH("LEFT")
+    if type(s.name.SetMaxLines) == "function" then s.name:SetMaxLines(2) end
     s:SetScript("OnClick", function(self)
         state.selected = self.entry and self.entry.id or nil
         Window.refresh()
     end)
     s:HookScript("OnMouseDown", raiseWindow)
     s:SetScript("OnEnter", showTooltip)
-    s:SetScript("OnLeave", function() if type(GameTooltip) == "table" then GameTooltip:Hide() end end)
+    s:SetScript("OnLeave", hideTooltip)
     s:Hide()
     return s
 end
 
+-- A category button of the top strip: the icon of the category's first entry in an
+-- action slot, lit when chosen; the tooltip names it.
+local function newCatButton(index)
+    local b = CreateFrame("Button", nil, f)
+    b:SetSize(CAT_SIZE, CAT_SIZE)
+    b:SetPoint("TOPLEFT", f, "TOPLEFT", 66 + (index - 1) * (CAT_SIZE + 6), -27)
+    local slot = b:CreateTexture(nil, "BACKGROUND")
+    slot:SetTexture(SLOT_FILE)
+    slot:SetSize(CAT_SIZE * 64 / 37, CAT_SIZE * 64 / 37)
+    slot:SetPoint("CENTER", b, "CENTER", 0, 0)
+    b.icon = b:CreateTexture(nil, "ARTWORK")
+    b.icon:SetSize(CAT_SIZE - 4, CAT_SIZE - 4)
+    b.icon:SetPoint("CENTER", b, "CENTER", 0, 0)
+    b.lit = b:CreateTexture(nil, "OVERLAY")
+    b.lit:SetTexture("Interface\\Buttons\\CheckButtonHilight")
+    b.lit:SetBlendMode("ADD")
+    b.lit:SetAllPoints(b.icon)
+    b:SetHighlightTexture("Interface\\Buttons\\ButtonHilight-Square", "ADD")
+    b:SetScript("OnClick", function(self)
+        state.cat, state.selected, state.page = self.cat, nil, 1
+        sound("IG_MAINMENU_OPTION_CHECKBOX_ON")
+        Window.refresh()
+    end)
+    b:HookScript("OnMouseDown", raiseWindow)
+    b:SetScript("OnEnter", function(self)
+        if type(GameTooltip) ~= "table" then return end
+        local caught, total = Dex.progress(ns.Main.db, self.cat)
+        GameTooltip:SetOwner(self, "ANCHOR_BOTTOM")
+        GameTooltip:AddLine(L["CAT_" .. self.cat], WHITE[1], WHITE[2], WHITE[3])
+        GameTooltip:AddLine(string.format(L.PROGRESS, caught, total), GOLD[1], GOLD[2], GOLD[3])
+        GameTooltip:Show()
+    end)
+    b:SetScript("OnLeave", hideTooltip)
+    return b
+end
+
+-- The Collections progress bar, built from the files its template uses.
+local function progressBar()
+    local bar = CreateFrame("StatusBar", nil, f)
+    bar:SetSize(196, 13)
+    bar:SetPoint("TOPRIGHT", f, "TOPRIGHT", -40, -36)
+    bar:SetStatusBarTexture("Interface\\PaperDollInfoFrame\\UI-Character-Skills-Bar")
+    bar:SetStatusBarColor(0.03125, 0.85, 0)
+    bar:SetMinMaxValues(0, 1)
+    local bg = bar:CreateTexture(nil, "BACKGROUND")
+    bg:SetAllPoints(bar)
+    bg:SetColorTexture(0, 0, 0, 0.6)
+    local border = bar:CreateTexture(nil, "OVERLAY")
+    border:SetTexture("Interface\\PaperDollInfoFrame\\UI-Character-Skills-BarBorder")
+    border:SetSize(205, 29)
+    border:SetPoint("LEFT", bar, "LEFT", -5, 0)
+    bar.text = bar:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    bar.text:SetPoint("CENTER", bar, "CENTER", 0, 1)
+    return bar
+end
+
+-- The tabs under the window (PanelTabButtonTemplate, named so PanelTemplates finds them).
+local function buildTabs()
+    for i, key in ipairs(TABS) do
+        -- Created with its parent: the tab's OnShow reads GetParent() for its padding.
+        local ok, t = pcall(CreateFrame, "Button", "FishDexWindowTab" .. i, f, "PanelTabButtonTemplate")
+        if not ok or not t then t = Kit.frame("Button", f, "UIPanelButtonTemplate", nil, "FishDexWindowTab" .. i) end
+        if type(t.SetID) == "function" then t:SetID(i) end
+        if i == 1 then
+            t:SetPoint("TOPLEFT", f, "BOTTOMLEFT", 11, 2)
+        else
+            t:SetPoint("LEFT", tabs[i - 1], "RIGHT", -16, 0)
+        end
+        t.tab = key
+        t:SetScript("OnClick", function(self)
+            state.tab, state.selected, state.page = self.tab, nil, 1
+            sound("IG_CHARACTER_INFO_TAB")
+            Window.refresh()
+        end)
+        t:HookScript("OnMouseDown", raiseWindow)
+        tabs[i] = t
+    end
+    f.Tabs = tabs
+    if type(PanelTemplates_SetNumTabs) == "function" then pcall(PanelTemplates_SetNumTabs, f, #TABS) end
+end
+
 local function build()
-    f = CreateFrame("Frame", "FishDexWindow", nil, "ButtonFrameTemplate")
-    f:SetParent(UIParent)
+    f = Kit.frame("Frame", UIParent, "PortraitFrameTemplate", "ButtonFrameTemplate", "FishDexWindow")
     f:Hide()
     f:SetSize(WIDTH, HEIGHT)
     f:SetFrameStrata("HIGH")
@@ -124,9 +233,9 @@ local function build()
     f:SetMovable(true)
     f:EnableMouse(true)
     f:RegisterForDrag("LeftButton")
-    if type(ButtonFrameTemplate_HideAttic) == "function" then ButtonFrameTemplate_HideAttic(f) end
-    if type(ButtonFrameTemplate_HidePortrait) == "function" then ButtonFrameTemplate_HidePortrait(f) end
-    if type(ButtonFrameTemplate_HideButtonBar) == "function" then ButtonFrameTemplate_HideButtonBar(f) end
+    if type(f.SetPortraitToAsset) == "function" then
+        pcall(f.SetPortraitToAsset, f, "Interface\\Icons\\Trade_Fishing")
+    end
     f:SetScript("OnDragStart", f.StartMoving)
     f:SetScript("OnDragStop", function(self)
         self:StopMovingOrSizing()
@@ -146,93 +255,154 @@ local function build()
     f:HookScript("OnShow", function() Window.refresh() end)
     table.insert(UISpecialFrames, "FishDexWindow")
 
-    -- Tabs: a segmented row of buttons, the chosen one locked highlighted.
-    f.tabBar = CreateFrame("Frame", nil, f)
-    f.tabBar:SetPoint("TOPLEFT", f, "TOPLEFT", 14, -30)
-    f.tabBar:SetSize(WIDTH - 28, 22)
+    -- Background: the Collections tile (an inset sharing the window's level); content one
+    -- level up.
+    local bg = Kit.frame("Frame", f, "CollectionsBackgroundTemplate", "InsetFrameTemplate")
+    bg:ClearAllPoints()
+    bg:SetPoint("TOPLEFT", f, "TOPLEFT", 4, -60)
+    bg:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", -6, 5)
+    local content = CreateFrame("Frame", nil, bg)
+    content:SetAllPoints(bg)
+    content:SetFrameLevel((f:GetFrameLevel() or 1) + 2)
+    f.content = content
 
-    f.progress = f:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    f.progress:SetPoint("TOPLEFT", f, "TOPLEFT", 16, -60)
-    f.progress:SetJustifyH("LEFT")
+    -- Top strip: category buttons (Collection tab), progress bar or the ranking's count.
+    f.progress = progressBar()
+    f.header = f:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    f.header:SetPoint("TOPRIGHT", f, "TOPRIGHT", -40, -36)
+    f.catLabel = f:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    f.catLabel:SetJustifyH("LEFT")
 
-    f.grid = CreateFrame("Frame", nil, f)
-    f.grid:SetPoint("TOPLEFT", f, "TOPLEFT", 18, -80)
-    f.grid:SetSize(GRID_W, ROWS * (SLOT + GAP))
-    for i = 1, COLS * ROWS do slots[i] = newSlot(f.grid, i) end
+    f.grid = CreateFrame("Frame", nil, content)
+    f.grid:SetPoint("TOPLEFT", content, "TOPLEFT", 26, -22)
+    f.grid:SetSize(COLS * CELL_W, ROWS * CELL_H)
+    for i = 1, PER_PAGE do slots[i] = newSlot(f.grid, i) end
 
-    -- Detail inset; its content sits in a child one level up (InsetFrameTemplate shares
-    -- its parent's level).
-    f.detail = CreateFrame("Frame", nil, nil, "InsetFrameTemplate")
-    f.detail:SetParent(f)
-    f.detail:SetPoint("TOPLEFT", f.grid, "TOPRIGHT", 14, 22)
-    f.detail:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", -12, 40)
-    local face = CreateFrame("Frame", nil, f.detail)
-    face:SetAllPoints(f.detail)
-    face:SetFrameLevel((f.detail:GetFrameLevel() or 1) + 1)
-    f.face = face
+    -- Pages, as in the Toy Box: "Page 1/3" and the spellbook arrows.
+    f.paging = CreateFrame("Frame", nil, content)
+    f.paging:SetSize(70, 32)
+    f.paging:SetPoint("BOTTOMRIGHT", content, "BOTTOMLEFT", DETAIL_X - 20, 36)
+    f.prev = CreateFrame("Button", nil, f.paging)
+    f.prev:SetSize(32, 32)
+    f.prev:SetPoint("LEFT", f.paging, "LEFT", 0, 0)
+    f.next = CreateFrame("Button", nil, f.paging)
+    f.next:SetSize(32, 32)
+    f.next:SetPoint("LEFT", f.prev, "RIGHT", 3, 0)
+    for _, p in ipairs({ { f.prev, "Prev", -1 }, { f.next, "Next", 1 } }) do
+        local b, kind, step = p[1], p[2], p[3]
+        b:SetNormalTexture("Interface\\Buttons\\UI-SpellbookIcon-" .. kind .. "Page-Up")
+        b:SetPushedTexture("Interface\\Buttons\\UI-SpellbookIcon-" .. kind .. "Page-Down")
+        b:SetDisabledTexture("Interface\\Buttons\\UI-SpellbookIcon-" .. kind .. "Page-Disabled")
+        b:SetHighlightTexture("Interface\\Buttons\\UI-Common-MouseHilight", "ADD")
+        b:SetScript("OnClick", function()
+            state.page = state.page + step
+            sound("IG_ABILITY_PAGE_TURN")
+            Window.refresh()
+        end)
+        b:HookScript("OnMouseDown", raiseWindow)
+    end
+    f.pageText = f.paging:CreateFontString(nil, "OVERLAY", "GameFontWhite")
+    f.pageText:SetPoint("RIGHT", f.paging, "LEFT", -11, 0)
+    f.pageText:SetJustifyH("RIGHT")
+    content:EnableMouseWheel(true)
+    content:SetScript("OnMouseWheel", function(_, delta)
+        if state.tab == "board" then return end
+        state.page = state.page - delta
+        Window.refresh()
+    end)
+
+    -- Detail column, straight on the background like a journal page.
+    f.detail = CreateFrame("Frame", nil, content)
+    f.detail:SetPoint("TOPLEFT", content, "TOPLEFT", DETAIL_X, -16)
+    f.detail:SetPoint("BOTTOMRIGHT", content, "BOTTOMRIGHT", -16, 40)
+    local face = f.detail
     f.bigIcon = face:CreateTexture(nil, "ARTWORK")
     f.bigIcon:SetSize(40, 40)
-    f.bigIcon:SetPoint("TOPLEFT", face, "TOPLEFT", 10, -10)
+    f.bigIcon:SetPoint("TOPLEFT", face, "TOPLEFT", 4, -4)
     f.name = face:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
     f.name:SetPoint("TOPLEFT", f.bigIcon, "TOPRIGHT", 8, -2)
-    f.name:SetPoint("RIGHT", face, "RIGHT", -10, 0)
+    f.name:SetPoint("RIGHT", face, "RIGHT", -4, 0)
     f.name:SetJustifyH("LEFT")
     f.name:SetWordWrap(false)
     f.status = face:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     f.status:SetPoint("TOPLEFT", f.name, "BOTTOMLEFT", 0, -4)
-    f.status:SetPoint("RIGHT", face, "RIGHT", -10, 0)
+    f.status:SetPoint("RIGHT", face, "RIGHT", -4, 0)
     f.status:SetJustifyH("LEFT")
     f.status:SetWordWrap(false)
     -- First catch on its own line under the icon: beside it, it wrapped onto the zones
     -- header (seen in game 2026-10-31, frFR texts).
     f.first = face:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     f.first:SetPoint("TOPLEFT", f.bigIcon, "BOTTOMLEFT", 2, -6)
-    f.first:SetPoint("RIGHT", face, "RIGHT", -10, 0)
+    f.first:SetPoint("RIGHT", face, "RIGHT", -4, 0)
     f.first:SetJustifyH("LEFT")
     f.first:SetWordWrap(false)
+    f.divider = face:CreateTexture(nil, "ARTWORK")
+    f.divider:SetPoint("TOPLEFT", face, "TOPLEFT", 0, -68)
+    f.divider:SetPoint("RIGHT", face, "RIGHT", 0, 0)
+    f.divider:SetHeight(3)
+    Kit.art(f.divider, "perks-divider-short", nil, nil)
     for i = 1, DETAIL_LINES do
         local fs = face:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-        fs:SetPoint("TOPLEFT", face, "TOPLEFT", 12, -80 - (i - 1) * 16)
-        fs:SetWidth(DETAIL_W - 24)
+        fs:SetPoint("TOPLEFT", face, "TOPLEFT", 6, -80 - (i - 1) * 16)
+        fs:SetPoint("RIGHT", face, "RIGHT", -4, 0)
         fs:SetJustifyH("LEFT")
         fs:SetWordWrap(false)
         lines[i] = fs
     end
 
-    f.sound = check(f, L.OPT_SOUND, "sound")
-    f.sound:SetPoint("BOTTOMLEFT", f, "BOTTOMLEFT", 16, 10)
-    f.announce = check(f, L.OPT_ANNOUNCE, "announce")
+    f.board = ns.BoardView.build(content, raiseWindow)
+
+    f.sound = check(content, L.OPT_SOUND, "sound")
+    f.sound:SetPoint("BOTTOMLEFT", content, "BOTTOMLEFT", 14, 10)
+    f.announce = check(content, L.OPT_ANNOUNCE, "announce")
     f.announce:SetPoint("LEFT", f.sound, "RIGHT", 90, 0)
-    f.share = check(f, L.OPT_SHARE, "share")
+    f.share = check(content, L.OPT_SHARE, "share")
     f.share:SetPoint("LEFT", f.announce, "RIGHT", 90, 0)
-    f.board = ns.BoardView.build(f, raiseWindow)
-    f.soundsButton = button(f, 110, 22, L.SOUNDS_BUTTON, function() ns.SoundPicker.toggle() end)
-    f.soundsButton:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", -14, 10)
+    f.soundsButton = button(content, 110, 22, L.SOUNDS_BUTTON, function() ns.SoundPicker.toggle() end)
+    f.soundsButton:SetPoint("BOTTOMRIGHT", content, "BOTTOMRIGHT", -12, 10)
+
+    buildTabs()
 end
 
-local function rebuildTabs()
-    local cats = Dex.categories(ns.Main.db)
-    cats[#cats + 1] = "board"
-    local w =math.floor((WIDTH - 28 - (#cats - 1) * 4) / #cats)
-    for i, cat in ipairs(cats) do
-        local t = tabs[i]
-        if not t then
-            t = button(f.tabBar, w, 22, "", function(self)
-                state.cat, state.selected = self.cat, nil
-                Window.refresh()
-            end)
-            tabs[i] = t
+-- PanelTemplates draws the chosen tab raised; without it (fallback buttons) the chosen
+-- one stays highlighted.
+local function refreshTabs()
+    local native = type(PanelTemplates_SetTab) == "function"
+    for i, t in ipairs(tabs) do
+        t:SetText(L["TAB_" .. t.tab])
+        if type(PanelTemplates_TabResize) == "function" then pcall(PanelTemplates_TabResize, t, 0) end
+        if t.tab == state.tab then
+            if native then pcall(PanelTemplates_SetTab, f, i) else t:LockHighlight() end
+        elseif not native then
+            t:UnlockHighlight()
         end
-        t:SetWidth(w)
-        t:ClearAllPoints()
-        t:SetPoint("TOPLEFT", f.tabBar, "TOPLEFT", (i - 1) * (w + 4), 0)
-        t.cat = cat
-        t:SetText(L["CAT_" .. cat])
-        if cat == state.cat then t:LockHighlight() else t:UnlockHighlight() end
-        t:Show()
     end
-    for i = #cats + 1, #tabs do tabs[i]:Hide() end
-    return cats
+end
+
+-- Category buttons of the Collection tab; the shiny collection has its own tab.
+local function refreshCats(db)
+    local cats = {}
+    for _, c in ipairs(Dex.categories(db)) do
+        if c ~= "shiny" then cats[#cats + 1] = c end
+    end
+    local valid = false
+    for _, c in ipairs(cats) do if c == state.cat then valid = true end end
+    if not valid then state.cat = cats[1] end
+    local onDex = state.tab == "dex"
+    for i, cat in ipairs(cats) do
+        local b = catButtons[i] or newCatButton(i)
+        catButtons[i] = b
+        b.cat = cat
+        local first = Dex.list(db, cat)[1]
+        b.icon:SetTexture(first and ns.Main.itemIcon(first.id) or "Interface\\Icons\\INV_Misc_QuestionMark")
+        b.lit:SetShown(cat == state.cat)
+        b:SetShown(onDex)
+    end
+    for i = #cats + 1, #catButtons do catButtons[i]:Hide() end
+    -- The chosen category's name after its buttons; on the Shiny tab, alone.
+    f.catLabel:ClearAllPoints()
+    f.catLabel:SetPoint("LEFT", f, "TOPLEFT", onDex and (66 + #cats * (CAT_SIZE + 6) + 6) or 66, -42)
+    f.catLabel:SetText(onDex and L["CAT_" .. state.cat] or (state.tab == "shiny" and L.CAT_shiny or ""))
 end
 
 -- Detail lines: { text, rgb } pairs, cut to DETAIL_LINES.
@@ -297,23 +467,24 @@ local function showDetail(entries)
     f.first:SetText("")
     if not e then
         f.bigIcon:Hide()
+        f.divider:Hide()
         f.name:SetText("")
         f.status:SetText(L.SELECT_HINT)
         paint(f.status, GREY)
         return
     end
     local db = ns.Main.db
-    local caught = Dex.isCaught(db, e.id)
+    local caught = caughtHere(db, e)
     local best = ns.Shiny.best(db, e.id)
-    if state.cat == "shiny" then caught = best ~= nil end
     f.bigIcon:SetTexture(ns.Main.itemIcon(e.id) or "Interface\\Icons\\INV_Misc_QuestionMark")
     f.bigIcon:SetDesaturated(not caught)
     f.bigIcon:SetVertexColor(caught and 1 or 0.35, caught and 1 or 0.35, caught and 1 or 0.35)
     f.bigIcon:Show()
+    f.divider:Show()
     local named = Dex.isCaught(db, e.id)
     f.name:SetText(named and (ns.Main.itemName(e.id) or L.UNKNOWN_NAME) or L.UNKNOWN_NAME)
     paint(f.name, gradeRGB(best) or (named and GOLD or GREY))
-    if state.cat == "shiny" then
+    if state.tab == "shiny" then
         f.status:SetText(best and L["GRADE_" .. best] or L.SHINY_NONE)
         paint(f.status, gradeRGB(best) or GREY)
         -- What a shiny cost: every catch of this fish, against its shinies of any grade.
@@ -333,42 +504,23 @@ local function showDetail(entries)
         f.status:SetText(L.NOT_CAUGHT)
         paint(f.status, GREY)
     end
-    for i, line in ipairs(state.cat == "shiny" and shinyLines(e) or detailLines(e, caught)) do
+    for i, line in ipairs(state.tab == "shiny" and shinyLines(e) or detailLines(e, caught)) do
         if i > DETAIL_LINES then break end
         lines[i]:SetText(line[1])
         paint(lines[i], line[2])
     end
 end
 
-function Window.refresh()
-    if not f or not f:IsShown() then return end
-    local db = ns.Main.db
-    local cats = rebuildTabs()
-    local valid = false
-    for _, c in ipairs(cats) do if c == state.cat then valid = true end end
-    if not valid then state.cat = cats[1] end
-    local allC, allT = Dex.progress(db)
-    if type(f.SetTitle) == "function" then f:SetTitle(L.TITLE .. " - " .. string.format(L.TOTAL, allC, allT)) end
-    local onBoard = state.cat == "board"
-    f.grid:SetShown(not onBoard)
-    f.detail:SetShown(not onBoard)
-    ns.BoardView.setShown(onBoard)
-    Window.refreshChecks()
-    if onBoard then
-        f.progress:SetText(L.CAT_board .. " - " .. ns.BoardView.refresh())
-        return
-    end
-    local entries = Dex.list(db, state.cat)
-    local caughtN, totalN = Dex.progress(db, state.cat)
-    f.progress:SetText(L["CAT_" .. state.cat] .. " - "
-        .. string.format(state.cat == "shiny" and L.SHINY_PROGRESS or L.PROGRESS, caughtN, totalN))
+local function refreshSlots(db, entries)
+    local pages = math.max(1, math.ceil(#entries / PER_PAGE))
+    state.page = math.max(1, math.min(state.page, pages))
+    local base = (state.page - 1) * PER_PAGE
     for i, s in ipairs(slots) do
-        local e = entries[i]
+        local e = entries[base + i]
         s.entry = e
         if e then
             local best = ns.Shiny.best(db, e.id)
-            local caught = Dex.isCaught(db, e.id)
-            if state.cat == "shiny" then caught = best ~= nil end
+            local caught = caughtHere(db, e)
             if s.border then
                 local rgb = gradeRGB(best)
                 if rgb then s.border:SetVertexColor(rgb[1], rgb[2], rgb[3]) end
@@ -376,14 +528,47 @@ function Window.refresh()
             end
             s.icon:SetTexture(ns.Main.itemIcon(e.id) or "Interface\\Icons\\INV_Misc_QuestionMark")
             s.icon:SetDesaturated(not caught)
-            local v = caught and 1 or 0.3
-            s.icon:SetVertexColor(v, v, v)
+            s.icon:SetAlpha(caught and 1 or 0.35)
+            s.frameOn:SetShown(caught)
+            s.frameOff:SetShown(not caught)
+            s.name:SetText(Dex.isCaught(db, e.id) and (ns.Main.itemName(e.id) or L.UNKNOWN_NAME) or L.UNKNOWN_NAME)
+            paint(s.name, caught and (gradeRGB(best) or GOLD) or GREY)
             s.selected:SetShown(e.id == state.selected)
             s:Show()
         else
             s:Hide()
         end
     end
+    f.pageText:SetText(string.format(L.PAGE, state.page, pages))
+    f.prev:SetEnabled(state.page > 1)
+    f.next:SetEnabled(state.page < pages)
+end
+
+function Window.refresh()
+    if not f or not f:IsShown() then return end
+    local db = ns.Main.db
+    local allC, allT = Dex.progress(db)
+    if type(f.SetTitle) == "function" then f:SetTitle(L.TITLE .. " - " .. string.format(L.TOTAL, allC, allT)) end
+    refreshTabs()
+    refreshCats(db)
+    Window.refreshChecks()
+    local onBoard = state.tab == "board"
+    f.grid:SetShown(not onBoard)
+    f.detail:SetShown(not onBoard)
+    f.paging:SetShown(not onBoard)
+    f.progress:SetShown(not onBoard)
+    f.header:SetShown(onBoard)
+    ns.BoardView.setShown(onBoard)
+    if onBoard then
+        f.header:SetText(L.CAT_board .. " - " .. ns.BoardView.refresh())
+        return
+    end
+    local cat = listCat()
+    local caughtN, totalN = Dex.progress(db, cat)
+    f.progress:SetValue(totalN > 0 and caughtN / totalN or 0)
+    f.progress.text:SetText(string.format(cat == "shiny" and L.SHINY_PROGRESS or L.PROGRESS, caughtN, totalN))
+    local entries = Dex.list(db, cat)
+    refreshSlots(db, entries)
     showDetail(entries)
 end
 
