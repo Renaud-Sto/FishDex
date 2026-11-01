@@ -16,6 +16,7 @@ H.test("the score counts every fished catch and the shinies per grade, minus the
     ns.Shiny.record(db, 6291, "legendary", 1)
     ns.Shiny.record(db, 6291, "legendary", 2)
     ns.Board.noteForced(db, "legendary")
+    ns.Shiny.record(db, 6717, "epic", 1) -- a quest item, saved before quest items left the roll
     H.eq(ns.Board.score(db), { total = 3, species = 2, rare = 1, epic = 0, legendary = 1 })
 end)
 

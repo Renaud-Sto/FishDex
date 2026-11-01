@@ -37,7 +37,10 @@ function Board.score(db)
         s.total = s.total + c.count
         s.species = s.species + 1
     end
-    for _, byGrade in pairs(db.shiny) do
+    for id, byGrade in pairs(db.shiny) do
+        -- Shinies saved on an entry no longer eligible (quest items before 2026-11-01) stay
+        -- in the save but leave the score.
+        if not ns.Shiny.eligible(ns.Dex.entry(id)) then byGrade = {} end
         for key, c in pairs(byGrade) do
             if s[key] and type(c) == "table" and type(c.count) == "number" then s[key] = s[key] + c.count end
         end

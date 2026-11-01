@@ -14,7 +14,9 @@ Shiny.GRADES = {
     { key = "epic", chance = 0.005, color = { 0.64, 0.21, 0.93 } },
     { key = "rare", chance = 0.02, color = { 0, 0.44, 0.87 } },
 }
-Shiny.ELIGIBLE = { fish = true, quest = true }
+-- Fish only (renaud, 2026-11-01): a quest item is fished once for its quest, a shiny
+-- roll on it would mean nothing.
+Shiny.ELIGIBLE = { fish = true }
 
 local rank = {}
 for i, g in ipairs(Shiny.GRADES) do rank[g.key] = i end
