@@ -182,6 +182,7 @@ function Comm.onEvent(event, ...)
     if event == "CHAT_MSG_ADDON" then
         Comm.receive(...)
     elseif event == "PLAYER_LOGIN" then
+        Board.noteChar(ns.Main.db, Comm.playerName(), time())
         if safe(chat().IsAddonMessagePrefixRegistered, Board.PREFIX) ~= true then
             safe(chat().RegisterAddonMessagePrefix, Board.PREFIX)
         end

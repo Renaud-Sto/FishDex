@@ -32,6 +32,18 @@ local function gradeRGB(key)
     return g and g.color
 end
 
+-- Tooltip of a row: the line's name, then every character of that account seen with
+-- FishDex, most recent first.
+local function showAlts(hit)
+    local row = hit.row
+    if not row or type(GameTooltip) ~= "table" then return end
+    GameTooltip:SetOwner(hit, "ANCHOR_CURSOR")
+    GameTooltip:AddLine(row.name, GOLD[1], GOLD[2], GOLD[3])
+    GameTooltip:AddLine(L.BOARD_ALTS, GREY[1], GREY[2], GREY[3])
+    for _, name in ipairs(row.alts or {}) do GameTooltip:AddLine("  " .. name, WHITE[1], WHITE[2], WHITE[3]) end
+    GameTooltip:Show()
+end
+
 function BoardView.build(parent, raise)
     v = CreateFrame("Frame", nil, parent)
     v:SetPoint("TOPLEFT", parent, "TOPLEFT", 4, 0)
@@ -67,6 +79,15 @@ function BoardView.build(parent, raise)
             fs:SetWordWrap(false)
             r[c] = fs
         end
+        -- The whole row answers the mouse: highlight, and the account's characters.
+        local hit = CreateFrame("Button", nil, face)
+        hit:SetPoint("TOPLEFT", face, "TOPLEFT", 4, -34 - (i - 1) * ROW_H)
+        hit:SetPoint("RIGHT", face, "RIGHT", -4, 0)
+        hit:SetHeight(ROW_H)
+        hit:SetHighlightTexture("Interface\\QuestFrame\\UI-QuestTitleHighlight", "ADD")
+        hit:SetScript("OnEnter", showAlts)
+        hit:SetScript("OnLeave", function() if type(GameTooltip) == "table" then GameTooltip:Hide() end end)
+        r.hit = hit
         rows[i] = r
     end
     v.note = face:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
@@ -123,8 +144,12 @@ function BoardView.refresh()
                 end
                 paint(fs, rgb)
             end
+            r.hit.row = row
+            r.hit:Show()
         else
             for _, fs in ipairs(r) do fs:SetText("") end
+            r.hit.row = nil
+            r.hit:Hide()
         end
     end
     local note = L.BOARD_HINT

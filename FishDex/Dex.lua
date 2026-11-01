@@ -18,7 +18,8 @@ Dex.DEFAULTS = {
     scanned = {},
     -- Guild ranking (Board.lua): id = this account's, forced[grade] = shinytest shinies,
     -- guilds["Guild-Realm"][id] = the last score heard from that account.
-    board = { id = "", forced = {}, guilds = {} },
+    -- chars[name] = last time this account played that character with FishDex.
+    board = { id = "", forced = {}, guilds = {}, chars = {} },
     -- sounds[target] = SOUNDKIT key; locale "": the client's; minimap.angle in degrees.
     settings = { sound = true, announce = true, share = true, locale = "", sounds = {},
         minimap = { hide = false, angle = 200 } },

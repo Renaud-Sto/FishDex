@@ -112,11 +112,47 @@ local function guildTable(db, guild)
     return g
 end
 
--- Saves a score heard from `name` (as the game named the sender).
+Board.ALTS_MAX = 20
+
+-- Adds `name` to a set of character names (name = last time seen), keeping the
+-- ALTS_MAX most recent.
+local function addAlt(set, name, now)
+    if type(name) ~= "string" then return end
+    set[name] = now
+    local n, oldest, oldestT = 0, nil, nil
+    for k, t in pairs(set) do
+        n = n + 1
+        if not oldestT or t < oldestT then oldest, oldestT = k, t end
+    end
+    if n > Board.ALTS_MAX then set[oldest] = nil end
+end
+
+-- The characters of this account that played with FishDex (renaud, 2026-11-01: one line
+-- per account, its characters in the line's tooltip).
+function Board.noteChar(db, name, now)
+    addAlt(db.board.chars, Board.cleanName(name), now)
+end
+
+-- Saves a score heard from `name`; the characters already heard on that account stay.
 function Board.store(db, guild, id, name, s, now)
     local g = guildTable(db, guild)
+    local alts = type(g[id]) == "table" and type(g[id].alts) == "table" and g[id].alts or {}
+    addAlt(alts, name, now)
     g[id] = { name = name, total = s.total, rare = s.rare, epic = s.epic, legendary = s.legendary,
-        species = s.species, t = now }
+        species = s.species, t = now, alts = alts }
+end
+
+-- Names of a set, most recently seen first.
+function Board.altList(set)
+    local out = {}
+    for k, t in pairs(type(set) == "table" and set or {}) do
+        if type(k) == "string" and type(t) == "number" then out[#out + 1] = k end
+    end
+    table.sort(out, function(a, b)
+        if set[a] ~= set[b] then return set[a] > set[b] end
+        return a < b
+    end)
+    return out
 end
 
 -- Ranking rows, best first by `sortKey` (a column; ties: total, then name). `me` =
@@ -127,13 +163,13 @@ function Board.rows(db, guild, me, sortKey)
     for id, e in pairs(guild and db.board.guilds[guild] or {}) do
         if type(e) == "table" and (not me or id ~= me.id) and type(e[key]) == "number" then
             out[#out + 1] = { id = id, name = tostring(e.name), total = e.total, rare = e.rare, epic = e.epic,
-                legendary = e.legendary, t = e.t }
+                legendary = e.legendary, t = e.t, alts = Board.altList(e.alts) }
         end
     end
     if me then
         local s = me.score
         out[#out + 1] = { id = me.id, name = me.name, total = s.total, rare = s.rare, epic = s.epic,
-            legendary = s.legendary, me = true }
+            legendary = s.legendary, me = true, alts = Board.altList(db.board.chars) }
     end
     table.sort(out, function(a, b)
         if a[key] ~= b[key] then return a[key] > b[key] end

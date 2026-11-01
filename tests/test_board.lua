@@ -228,3 +228,19 @@ H.test("Forever names: First Last from UnitName's surname, sent in the message a
     T.fire("CHAT_MSG_ADDON", "FishDex", "S^1^0000beef^40^2^1^0^7^Kanye Est", "GUILD", "Kanye-Royaume")
     H.eq(T.env.FishDexDB.board.guilds["La Guilde-Royaume"]["0000beef"].name, "Kanye Est")
 end)
+
+H.test("one line per account; its characters are kept for the tooltip, most recent first", function()
+    local ns, db = pure()
+    local s = { total = 5, rare = 0, epic = 0, legendary = 0, species = 2 }
+    ns.Board.store(db, "G-R", "0000beef", "Sto Prime", s, 10)
+    ns.Board.store(db, "G-R", "0000beef", "Sto Reroll", s, 20)
+    ns.Board.noteChar(db, "Moi Un", 1)
+    ns.Board.noteChar(db, "Moi Deux", 2)
+    local me = { id = "aaaaaaaa", name = "Moi Deux", score = s }
+    local rows = ns.Board.rows(db, "G-R", me)
+    H.eq(#rows, 2)
+    for _, r in ipairs(rows) do
+        if r.me then H.eq(r.alts, { "Moi Deux", "Moi Un" }) else H.eq(r.alts, { "Sto Reroll", "Sto Prime" }) end
+        if not r.me then H.eq(r.name, "Sto Reroll") end
+    end
+end)
