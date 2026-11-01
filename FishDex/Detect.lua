@@ -53,12 +53,13 @@ end
 Detect.roll = function() return math.random() end
 Detect.forceNext = nil
 
+-- Grade key or nil, and true when /fishdex shinytest forced it.
 local function shinyFor(entry)
     if not ns.Shiny.eligible(entry) then return nil end
     if Detect.forceNext then
         local key = Detect.forceNext
         Detect.forceNext = nil
-        return key
+        return key, true
     end
     return ns.Shiny.fromRoll(Detect.roll())
 end
@@ -73,8 +74,9 @@ function Detect.onLoot(db, now, clock)
     local zone = Detect.zoneName()
     for _, id in ipairs(Detect.lootItemIDs()) do
         local isNew = ns.Dex.record(db, id, now, zone)
-        local grade = shinyFor(ns.Dex.entry(id))
+        local grade, forced = shinyFor(ns.Dex.entry(id))
         local newGrade = grade and ns.Shiny.record(db, id, grade, now)
+        if forced and ns.Board then ns.Board.noteForced(db, grade) end
         if isNew or grade then out[#out + 1] = { id = id, new = isNew, grade = grade, newGrade = newGrade } end
     end
     return out
@@ -87,7 +89,10 @@ function Detect.onEvent(event, a1, _, a3)
         for _, c in ipairs(Detect.onLoot(db, time(), GetTime())) do
             if c.grade then ns.Announce.shiny(c.id, c.grade, c.newGrade) else ns.Announce.newCatch(c.id) end
         end
-        if handled then ns.Main.refresh() end
+        if handled then
+            ns.Main.refresh()
+            if ns.Comm then ns.Comm.onCatch() end
+        end
     elseif event == "LOOT_CLOSED" then
         handled = false
         Detect.lastFishingStop = nil

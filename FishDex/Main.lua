@@ -84,6 +84,7 @@ end
 function Main.init()
     if type(FishDexDB) ~= "table" then FishDexDB = {} end
     Main.db = Dex.repair(FishDexDB)
+    ns.Board.ensureId(Main.db, math.random)
     if Main.db.settings.locale ~= "" then ns.setLocale(Main.db.settings.locale) end
     Main.ready = true
 end
@@ -108,6 +109,8 @@ function Main.onEvent(event, arg1, ...)
         Main.scanRecipes()
     elseif event == "GET_ITEM_INFO_RECEIVED" then
         if ns.Window then ns.Window.refreshSoon() end
+    elseif event == "CHAT_MSG_ADDON" or event == "PLAYER_LOGIN" then
+        ns.Comm.onEvent(event, arg1, ...)
     else
         ns.Detect.onEvent(event, arg1, ...)
     end
@@ -153,6 +156,7 @@ local frame = CreateFrame("Frame")
 local events = { "ADDON_LOADED", "ADDON_ACTION_BLOCKED", "ADDON_ACTION_FORBIDDEN", "TRADE_SKILL_SHOW",
     "TRADE_SKILL_LIST_UPDATE", "TRADE_SKILL_DATA_SOURCE_CHANGED", "GET_ITEM_INFO_RECEIVED" }
 for _, e in ipairs(ns.Detect.EVENTS) do events[#events + 1] = e end
+for _, e in ipairs(ns.Comm.EVENTS) do events[#events + 1] = e end
 for _, event in ipairs(events) do
     pcall(frame.RegisterEvent, frame, event)
 end

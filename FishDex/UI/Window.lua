@@ -46,6 +46,9 @@ local function check(parent, text, key)
     c:SetScript("OnClick", function(self)
         local on = self:GetChecked() and true or false
         ns.Main.db.settings[key] = on
+        -- Sharing back on: the guild gets the score now rather than after the next fishing.
+        if key == "share" and on then ns.Comm.queue("S", true) end
+        if key == "share" then Window.refresh() end
         if type(PlaySound) == "function" and type(SOUNDKIT) == "table" then
             local id = on and SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON or SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_OFF
             if id then pcall(PlaySound, id) end
@@ -200,13 +203,17 @@ local function build()
     f.sound:SetPoint("BOTTOMLEFT", f, "BOTTOMLEFT", 16, 10)
     f.announce = check(f, L.OPT_ANNOUNCE, "announce")
     f.announce:SetPoint("LEFT", f.sound, "RIGHT", 90, 0)
+    f.share = check(f, L.OPT_SHARE, "share")
+    f.share:SetPoint("LEFT", f.announce, "RIGHT", 90, 0)
+    f.board = ns.BoardView.build(f, raiseWindow)
     f.soundsButton = button(f, 110, 22, L.SOUNDS_BUTTON, function() ns.SoundPicker.toggle() end)
     f.soundsButton:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", -14, 10)
 end
 
 local function rebuildTabs()
     local cats = Dex.categories(ns.Main.db)
-    local w = math.floor((WIDTH - 28 - (#cats - 1) * 4) / #cats)
+    cats[#cats + 1] = "board"
+    local w =math.floor((WIDTH - 28 - (#cats - 1) * 4) / #cats)
     for i, cat in ipairs(cats) do
         local t = tabs[i]
         if not t then
@@ -340,12 +347,21 @@ function Window.refresh()
     local valid = false
     for _, c in ipairs(cats) do if c == state.cat then valid = true end end
     if not valid then state.cat = cats[1] end
+    local allC, allT = Dex.progress(db)
+    if type(f.SetTitle) == "function" then f:SetTitle(L.TITLE .. " - " .. string.format(L.TOTAL, allC, allT)) end
+    local onBoard = state.cat == "board"
+    f.grid:SetShown(not onBoard)
+    f.detail:SetShown(not onBoard)
+    ns.BoardView.setShown(onBoard)
+    Window.refreshChecks()
+    if onBoard then
+        f.progress:SetText(L.CAT_board .. " - " .. ns.BoardView.refresh())
+        return
+    end
     local entries = Dex.list(db, state.cat)
     local caughtN, totalN = Dex.progress(db, state.cat)
-    local allC, allT = Dex.progress(db)
     f.progress:SetText(L["CAT_" .. state.cat] .. " - "
         .. string.format(state.cat == "shiny" and L.SHINY_PROGRESS or L.PROGRESS, caughtN, totalN))
-    if type(f.SetTitle) == "function" then f:SetTitle(L.TITLE .. " - " .. string.format(L.TOTAL, allC, allT)) end
     for i, s in ipairs(slots) do
         local e = entries[i]
         s.entry = e
@@ -369,12 +385,16 @@ function Window.refresh()
         end
     end
     showDetail(entries)
+end
+
+-- The bottom row: labels in the addon's language, boxes as saved.
+function Window.refreshChecks()
+    local s = ns.Main.db.settings
     f.soundsButton:SetText(L.SOUNDS_BUTTON)
-    for _, c in ipairs({ { f.sound, L.OPT_SOUND }, { f.announce, L.OPT_ANNOUNCE } }) do
+    for _, c in ipairs({ { f.sound, L.OPT_SOUND }, { f.announce, L.OPT_ANNOUNCE }, { f.share, L.OPT_SHARE } }) do
         if type(c[1].Text) == "table" then c[1].Text:SetText(c[2]) end
+        c[1]:SetChecked(s[c[1].key])
     end
-    f.sound:SetChecked(db.settings.sound)
-    f.announce:SetChecked(db.settings.announce)
 end
 
 -- Item names arrive in bursts (GET_ITEM_INFO_RECEIVED): repaint once, a moment later.

@@ -16,7 +16,10 @@ Dex.DEFAULTS = {
     shiny = {}, -- shiny[itemID][grade] = { count, first } (Shiny.lua)
     known = {},
     scanned = {},
-    settings = { sound = true, announce = true, locale = "", sounds = {} }, -- sounds[target] = SOUNDKIT key -- locale "": the client's
+    -- Guild ranking (Board.lua): id = this account's, forced[grade] = shinytest shinies,
+    -- guilds["Guild-Realm"][id] = the last score heard from that account.
+    board = { id = "", forced = {}, guilds = {} },
+    settings = { sound = true, announce = true, share = true, locale = "", sounds = {} }, -- sounds[target] = SOUNDKIT key -- locale "": the client's
 }
 
 local byID = {}

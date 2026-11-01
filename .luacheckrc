@@ -49,6 +49,7 @@ read_globals = {
     "RaidNotice_AddMessage", "RaidWarningFrame", "ChatTypeInfo", "UIErrorsFrame",
     "ButtonFrameTemplate_HideAttic", "ButtonFrameTemplate_HidePortrait",
     "ButtonFrameTemplate_HideButtonBar", "SOUNDKIT",
+    "Enum", "C_ChatInfo", "IsInGuild", "GetGuildInfo", "Ambiguate",
     -- SlashCmdList is read-only as a whole; the addon may assign only its own handler.
     SlashCmdList = { other_fields = true, fields = { FISHDEX = { read_only = false } } },
 }
