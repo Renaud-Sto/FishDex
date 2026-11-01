@@ -97,6 +97,8 @@ local enUS = {
     TAB_shiny = "Shiny",
     TAB_board = "Guild",
     PAGE = "Page %d/%d",
+    DETAIL_HEAD = "Details",
+    BOARD_TITLE = "Guild ranking",
 }
 
 local frFR = {
@@ -191,6 +193,8 @@ local frFR = {
     TAB_shiny = "Shiny",
     TAB_board = "Guilde",
     PAGE = "Page %d/%d",
+    DETAIL_HEAD = "Fiche",
+    BOARD_TITLE = "Classement de la guilde",
 }
 
 ns.LOCALES = { enUS = enUS, frFR = frFR }

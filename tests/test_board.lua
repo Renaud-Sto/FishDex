@@ -133,8 +133,8 @@ H.test("a member's score is saved for the guild and shown in the Guild tab; a he
     H.truthy(tab)
     rawget(tab, "scripts").OnClick(tab)
     local win = T.env.FishDexWindow
-    H.truthy(rawget(win, "header").text:find("3 pêcheurs", 1, true))
-    H.falsy(rawget(win, "grid").shown)
+    H.truthy(rawget(rawget(win, "ranking"), "right").text:find("3 pêcheurs", 1, true))
+    H.falsy(rawget(rawget(win, "list"), "frame").shown)
 end)
 
 H.test("ignored: other prefixes, other channels, this account's own echo, a bad line, sharing off", function()

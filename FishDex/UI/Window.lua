@@ -1,9 +1,10 @@
 -- The dex window, laid out like the game's Collections journal (Toy Box): portrait panel,
 -- warm collections background, three tabs under the window (Collection, Shiny, Guild),
--- category buttons and a progress bar in the top strip, pages of item buttons with their
--- names, and the detail of the selected entry on the right. Built on first open,
--- refreshed only while shown. renaud, 2026-11-01: one row of eight tabs was too many and
--- the dark insets too cold.
+-- the categories as side tabs on the right edge (as Forever's profession window), a
+-- progress bar in the top strip, two sections with CraftProfit's carved wood headers:
+-- pages of item buttons with their names, and the detail of the selected entry. Built on
+-- first open, refreshed only while shown. renaud, 2026-11-01: one row of eight tabs was
+-- too many, the dark insets too cold; then side tabs, 6 rows (7 ran over the top), wood.
 local _, ns = ...
 
 local Window = {}
@@ -12,12 +13,12 @@ ns.Window = Window
 local L, Dex = ns.L, ns.Dex
 
 local WIDTH, HEIGHT = 703, 560
-local COLS, ROWS = 2, 7
+local COLS, ROWS = 2, 6
 local PER_PAGE = COLS * ROWS
 local CELL_W, CELL_H = 205, 58
-local DETAIL_X = 440                       -- left edge of the detail column in the content
+local SPLIT = 432                          -- the grid section ends here, the detail starts
 local DETAIL_LINES = 16
-local CAT_SIZE = 30
+local SIDE_W, SIDE_H, SIDE_GAP = 43, 55, 2 -- Forever's LargeSideTabButtonTemplate
 local BORDER_FILE = "Interface\\Common\\WhiteIconFrame"
 local SLOT_FILE = "Interface\\Buttons\\UI-Quickslot2"
 local TABS = { "dex", "shiny", "board" }
@@ -140,34 +141,47 @@ local function newSlot(parent, index)
     return s
 end
 
--- A category button of the top strip: the icon of the category's first entry in an
--- action slot, lit when chosen; the tooltip names it.
+-- A category side tab on the right edge, drawn like Forever's LargeSideTabButtonTemplate
+-- (its atlases, built here rather than inherited: the template's mixin sets atlases on
+-- its icon). The icon is the category's first entry; the tooltip names the category.
 local function newCatButton(index)
     local b = CreateFrame("Button", nil, f)
-    b:SetSize(CAT_SIZE, CAT_SIZE)
-    b:SetPoint("TOPLEFT", f, "TOPLEFT", 66 + (index - 1) * (CAT_SIZE + 6), -27)
-    local slot = b:CreateTexture(nil, "BACKGROUND")
-    slot:SetTexture(SLOT_FILE)
-    slot:SetSize(CAT_SIZE * 64 / 37, CAT_SIZE * 64 / 37)
-    slot:SetPoint("CENTER", b, "CENTER", 0, 0)
+    b:SetSize(SIDE_W, SIDE_H)
+    b:SetPoint("TOPLEFT", f, "TOPRIGHT", 0, -60 - (index - 1) * (SIDE_H + SIDE_GAP))
+    local bg = b:CreateTexture(nil, "BACKGROUND")
+    bg:SetPoint("CENTER", b, "CENTER", 0, 0)
+    Kit.art(bg, "common-sidetab", SIDE_W, SIDE_H, SLOT_FILE)
     b.icon = b:CreateTexture(nil, "ARTWORK")
-    b.icon:SetSize(CAT_SIZE - 4, CAT_SIZE - 4)
-    b.icon:SetPoint("CENTER", b, "CENTER", 0, 0)
+    b.icon:SetSize(34, 34)
+    b.icon:SetPoint("CENTER", b, "CENTER", -2, 0)
+    b.icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
     b.lit = b:CreateTexture(nil, "OVERLAY")
-    b.lit:SetTexture("Interface\\Buttons\\CheckButtonHilight")
-    b.lit:SetBlendMode("ADD")
-    b.lit:SetAllPoints(b.icon)
-    b:SetHighlightTexture("Interface\\Buttons\\ButtonHilight-Square", "ADD")
+    b.lit:SetPoint("CENTER", b, "CENTER", 0, 0)
+    if not Kit.art(b.lit, "common-sidetab-selected", SIDE_W, SIDE_H) then
+        b.lit:SetTexture("Interface\\Buttons\\CheckButtonHilight")
+        b.lit:SetBlendMode("ADD")
+        b.lit:SetAllPoints(b.icon)
+    end
+    local hover = b:CreateTexture(nil, "HIGHLIGHT")
+    hover:SetPoint("CENTER", b, "CENTER", 0, 0)
+    if not Kit.art(hover, "common-sidetab-hover", SIDE_W, SIDE_H) then
+        hover:Show()
+        hover:SetTexture("Interface\\Buttons\\ButtonHilight-Square")
+        hover:SetBlendMode("ADD")
+        hover:SetAllPoints(b.icon)
+    end
+    b:SetScript("OnMouseDown", function(self) self.icon:SetPoint("CENTER", self, "CENTER", -1, -1) end)
+    b:SetScript("OnMouseUp", function(self) self.icon:SetPoint("CENTER", self, "CENTER", -2, 0) end)
     b:SetScript("OnClick", function(self)
         state.cat, state.selected, state.page = self.cat, nil, 1
-        sound("IG_MAINMENU_OPTION_CHECKBOX_ON")
+        sound("IG_CHARACTER_INFO_TAB")
         Window.refresh()
     end)
     b:HookScript("OnMouseDown", raiseWindow)
     b:SetScript("OnEnter", function(self)
         if type(GameTooltip) ~= "table" then return end
         local caught, total = Dex.progress(ns.Main.db, self.cat)
-        GameTooltip:SetOwner(self, "ANCHOR_BOTTOM")
+        GameTooltip:SetOwner(self, "ANCHOR_RIGHT", -4, -4)
         GameTooltip:AddLine(L["CAT_" .. self.cat], WHITE[1], WHITE[2], WHITE[3])
         GameTooltip:AddLine(string.format(L.PROGRESS, caught, total), GOLD[1], GOLD[2], GOLD[3])
         GameTooltip:Show()
@@ -180,7 +194,7 @@ end
 local function progressBar()
     local bar = CreateFrame("StatusBar", nil, f)
     bar:SetSize(196, 13)
-    bar:SetPoint("TOPRIGHT", f, "TOPRIGHT", -40, -36)
+    bar:SetPoint("TOP", f, "TOP", 0, -36)
     bar:SetStatusBarTexture("Interface\\PaperDollInfoFrame\\UI-Character-Skills-Bar")
     bar:SetStatusBarColor(0.03125, 0.85, 0)
     bar:SetMinMaxValues(0, 1)
@@ -266,22 +280,22 @@ local function build()
     content:SetFrameLevel((f:GetFrameLevel() or 1) + 2)
     f.content = content
 
-    -- Top strip: category buttons (Collection tab), progress bar or the ranking's count.
+    -- Top strip: the progress bar (Collection and Shiny tabs).
     f.progress = progressBar()
-    f.header = f:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    f.header:SetPoint("TOPRIGHT", f, "TOPRIGHT", -40, -36)
-    f.catLabel = f:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    f.catLabel:SetJustifyH("LEFT")
 
-    f.grid = CreateFrame("Frame", nil, content)
-    f.grid:SetPoint("TOPLEFT", content, "TOPLEFT", 26, -22)
+    -- Sections with CraftProfit's carved wood headers: the grid, the detail, the ranking.
+    f.list = Kit.panel(content)
+    f.list.frame:SetPoint("TOPLEFT", content, "TOPLEFT", 6, -6)
+    f.list.frame:SetPoint("BOTTOMRIGHT", content, "BOTTOMLEFT", SPLIT, 40)
+    f.grid = CreateFrame("Frame", nil, f.list.body)
+    f.grid:SetPoint("TOPLEFT", f.list.body, "TOPLEFT", 16, -8)
     f.grid:SetSize(COLS * CELL_W, ROWS * CELL_H)
     for i = 1, PER_PAGE do slots[i] = newSlot(f.grid, i) end
 
     -- Pages, as in the Toy Box: "Page 1/3" and the spellbook arrows.
-    f.paging = CreateFrame("Frame", nil, content)
+    f.paging = CreateFrame("Frame", nil, f.list.body)
     f.paging:SetSize(70, 32)
-    f.paging:SetPoint("BOTTOMRIGHT", content, "BOTTOMLEFT", DETAIL_X - 20, 36)
+    f.paging:SetPoint("BOTTOMRIGHT", f.list.body, "BOTTOMRIGHT", -6, 2)
     f.prev = CreateFrame("Button", nil, f.paging)
     f.prev:SetSize(32, 32)
     f.prev:SetPoint("LEFT", f.paging, "LEFT", 0, 0)
@@ -311,46 +325,49 @@ local function build()
         Window.refresh()
     end)
 
-    -- Detail column, straight on the background like a journal page.
-    f.detail = CreateFrame("Frame", nil, content)
-    f.detail:SetPoint("TOPLEFT", content, "TOPLEFT", DETAIL_X, -16)
-    f.detail:SetPoint("BOTTOMRIGHT", content, "BOTTOMRIGHT", -16, 40)
+    f.info = Kit.panel(content)
+    f.info.frame:SetPoint("TOPLEFT", content, "TOPLEFT", SPLIT + 8, -6)
+    f.info.frame:SetPoint("BOTTOMRIGHT", content, "BOTTOMRIGHT", -6, 40)
+    f.detail = f.info.body
     local face = f.detail
     f.bigIcon = face:CreateTexture(nil, "ARTWORK")
     f.bigIcon:SetSize(40, 40)
-    f.bigIcon:SetPoint("TOPLEFT", face, "TOPLEFT", 4, -4)
+    f.bigIcon:SetPoint("TOPLEFT", face, "TOPLEFT", 8, -6)
     f.name = face:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
     f.name:SetPoint("TOPLEFT", f.bigIcon, "TOPRIGHT", 8, -2)
-    f.name:SetPoint("RIGHT", face, "RIGHT", -4, 0)
+    f.name:SetPoint("RIGHT", face, "RIGHT", -6, 0)
     f.name:SetJustifyH("LEFT")
     f.name:SetWordWrap(false)
     f.status = face:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     f.status:SetPoint("TOPLEFT", f.name, "BOTTOMLEFT", 0, -4)
-    f.status:SetPoint("RIGHT", face, "RIGHT", -4, 0)
+    f.status:SetPoint("RIGHT", face, "RIGHT", -6, 0)
     f.status:SetJustifyH("LEFT")
     f.status:SetWordWrap(false)
     -- First catch on its own line under the icon: beside it, it wrapped onto the zones
     -- header (seen in game 2026-10-31, frFR texts).
     f.first = face:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     f.first:SetPoint("TOPLEFT", f.bigIcon, "BOTTOMLEFT", 2, -6)
-    f.first:SetPoint("RIGHT", face, "RIGHT", -4, 0)
+    f.first:SetPoint("RIGHT", face, "RIGHT", -6, 0)
     f.first:SetJustifyH("LEFT")
     f.first:SetWordWrap(false)
     f.divider = face:CreateTexture(nil, "ARTWORK")
-    f.divider:SetPoint("TOPLEFT", face, "TOPLEFT", 0, -68)
-    f.divider:SetPoint("RIGHT", face, "RIGHT", 0, 0)
+    f.divider:SetPoint("TOPLEFT", face, "TOPLEFT", 4, -70)
+    f.divider:SetPoint("RIGHT", face, "RIGHT", -4, 0)
     f.divider:SetHeight(3)
     Kit.art(f.divider, "perks-divider-short", nil, nil)
     for i = 1, DETAIL_LINES do
         local fs = face:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-        fs:SetPoint("TOPLEFT", face, "TOPLEFT", 6, -80 - (i - 1) * 16)
-        fs:SetPoint("RIGHT", face, "RIGHT", -4, 0)
+        fs:SetPoint("TOPLEFT", face, "TOPLEFT", 10, -82 - (i - 1) * 16)
+        fs:SetPoint("RIGHT", face, "RIGHT", -6, 0)
         fs:SetJustifyH("LEFT")
         fs:SetWordWrap(false)
         lines[i] = fs
     end
 
-    f.board = ns.BoardView.build(content, raiseWindow)
+    f.ranking = Kit.panel(content)
+    f.ranking.frame:SetPoint("TOPLEFT", content, "TOPLEFT", 6, -6)
+    f.ranking.frame:SetPoint("BOTTOMRIGHT", content, "BOTTOMRIGHT", -6, 40)
+    f.board = ns.BoardView.build(f.ranking.body, raiseWindow)
 
     f.sound = check(content, L.OPT_SOUND, "sound")
     f.sound:SetPoint("BOTTOMLEFT", content, "BOTTOMLEFT", 14, 10)
@@ -399,10 +416,6 @@ local function refreshCats(db)
         b:SetShown(onDex)
     end
     for i = #cats + 1, #catButtons do catButtons[i]:Hide() end
-    -- The chosen category's name after its buttons; on the Shiny tab, alone.
-    f.catLabel:ClearAllPoints()
-    f.catLabel:SetPoint("LEFT", f, "TOPLEFT", onDex and (66 + #cats * (CAT_SIZE + 6) + 6) or 66, -42)
-    f.catLabel:SetText(onDex and L["CAT_" .. state.cat] or (state.tab == "shiny" and L.CAT_shiny or ""))
 end
 
 -- Detail lines: { text, rgb } pairs, cut to DETAIL_LINES.
@@ -547,26 +560,30 @@ end
 function Window.refresh()
     if not f or not f:IsShown() then return end
     local db = ns.Main.db
-    local allC, allT = Dex.progress(db)
-    if type(f.SetTitle) == "function" then f:SetTitle(L.TITLE .. " - " .. string.format(L.TOTAL, allC, allT)) end
+    if type(f.SetTitle) == "function" then f:SetTitle(L.TITLE) end
     refreshTabs()
     refreshCats(db)
     Window.refreshChecks()
     local onBoard = state.tab == "board"
-    f.grid:SetShown(not onBoard)
-    f.detail:SetShown(not onBoard)
-    f.paging:SetShown(not onBoard)
-    f.progress:SetShown(not onBoard)
-    f.header:SetShown(onBoard)
+    f.list.frame:SetShown(not onBoard)
+    f.info.frame:SetShown(not onBoard)
+    f.ranking.frame:SetShown(onBoard)
     ns.BoardView.setShown(onBoard)
+    -- The bar: the whole dex (or every shiny), like a profession's skill bar.
+    local barC, barT = Dex.progress(db, state.tab == "shiny" and "shiny" or nil)
+    f.progress:SetValue(barT > 0 and barC / barT or 0)
+    f.progress.text:SetText(string.format(state.tab == "shiny" and L.SHINY_PROGRESS or L.TOTAL, barC, barT))
+    f.progress:SetShown(not onBoard)
     if onBoard then
-        f.header:SetText(L.CAT_board .. " - " .. ns.BoardView.refresh())
+        f.ranking.title:SetText(L.BOARD_TITLE)
+        f.ranking.right:SetText(ns.BoardView.refresh())
         return
     end
     local cat = listCat()
     local caughtN, totalN = Dex.progress(db, cat)
-    f.progress:SetValue(totalN > 0 and caughtN / totalN or 0)
-    f.progress.text:SetText(string.format(cat == "shiny" and L.SHINY_PROGRESS or L.PROGRESS, caughtN, totalN))
+    f.list.title:SetText(L["CAT_" .. cat])
+    f.list.right:SetText(string.format("%d / %d", caughtN, totalN))
+    f.info.title:SetText(L.DETAIL_HEAD)
     local entries = Dex.list(db, cat)
     refreshSlots(db, entries)
     showDetail(entries)

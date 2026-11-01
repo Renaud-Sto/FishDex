@@ -10,11 +10,11 @@ local L, Kit = ns.L, ns.Kit
 local GOLD, WHITE, GREY = Kit.GOLD, Kit.WHITE, Kit.GREY
 local paint = Kit.paint
 
-local ROW_H, VISIBLE = 18, 20
+local ROW_H, VISIBLE = 18, 18
 -- key (sort key; nil: not sortable), width, label key, justify.
 local COLUMNS = {
     { width = 40, label = "COL_RANK", justify = "RIGHT" },
-    { key = "name", width = 200, label = "COL_NAME", justify = "LEFT" },
+    { key = "name", width = 192, label = "COL_NAME", justify = "LEFT" },
     { key = "total", width = 80, label = "COL_TOTAL", justify = "RIGHT" },
     { key = "rare", width = 76, label = "COL_RARE", justify = "RIGHT" },
     { key = "epic", width = 76, label = "COL_EPIC", justify = "RIGHT" },
@@ -34,8 +34,8 @@ end
 
 function BoardView.build(parent, raise)
     v = CreateFrame("Frame", nil, parent)
-    v:SetPoint("TOPLEFT", parent, "TOPLEFT", 16, -12)
-    v:SetPoint("BOTTOMRIGHT", parent, "BOTTOMRIGHT", -16, 40)
+    v:SetPoint("TOPLEFT", parent, "TOPLEFT", 4, 0)
+    v:SetPoint("BOTTOMRIGHT", parent, "BOTTOMRIGHT", -4, 0)
     v:Hide()
     local face = v
 

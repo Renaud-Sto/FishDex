@@ -34,6 +34,47 @@ function Kit.art(tex, atlas, w, h, file)
     return true
 end
 
+-- The carved wood header of CraftProfit's panels (its look "a"): the quest log reward
+-- strip, cropped to its wood (about 20 % dark rim above, 3 % below, measured for
+-- CraftProfit), 22 px tall, 4 px in from the sides and 2 px from the top, a divider
+-- under it. Returns { frame, head, title, right, body }; body starts under the header.
+Kit.HEAD_H = 22
+function Kit.panel(parent)
+    local p = {}
+    local f = CreateFrame("Frame", nil, parent)
+    p.frame = f
+    local head = CreateFrame("Frame", nil, f)
+    head:SetPoint("TOPLEFT", f, "TOPLEFT", 4, -2)
+    head:SetPoint("TOPRIGHT", f, "TOPRIGHT", -4, -2)
+    head:SetHeight(Kit.HEAD_H)
+    p.head = head
+    local wood = head:CreateTexture(nil, "BACKGROUND")
+    wood:SetAllPoints(head)
+    if Kit.art(wood, "questlog-reward-header-top") then
+        wood:SetTexCoord(0, 1, 0.2, 0.97)
+    else
+        wood:Show()
+        wood:SetColorTexture(Kit.GOLD[1], Kit.GOLD[2], Kit.GOLD[3], 0.15)
+    end
+    local divider = head:CreateTexture(nil, "ARTWORK")
+    divider:SetPoint("LEFT", head, "BOTTOMLEFT", 0, 0)
+    divider:SetPoint("RIGHT", head, "BOTTOMRIGHT", 0, 0)
+    divider:SetHeight(3)
+    Kit.art(divider, "perks-divider-short")
+    p.right = head:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    p.right:SetPoint("RIGHT", head, "RIGHT", -8, 0)
+    p.right:SetWordWrap(false)
+    p.title = head:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    p.title:SetPoint("LEFT", head, "LEFT", 8, 0)
+    p.title:SetPoint("RIGHT", p.right, "LEFT", -8, 0)
+    p.title:SetJustifyH("LEFT")
+    p.title:SetWordWrap(false)
+    p.body = CreateFrame("Frame", nil, f)
+    p.body:SetPoint("TOPLEFT", head, "BOTTOMLEFT", 0, -6)
+    p.body:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", -4, 2)
+    return p
+end
+
 -- A frame from a Blizzard template, or from `fallback` when this client lacks it.
 -- Nil parent then SetParent (taint rule of the native UI notes).
 function Kit.frame(kind, parent, template, fallback, name)

@@ -120,7 +120,7 @@ H.test("the shiny tab opens and shows one slot per eligible entry", function()
     for _, fr in ipairs(T.frames) do
         if fr.kind == "Button" and rawget(fr, "parent") == rawget(win, "grid") and fr.shown then shown = shown + 1 end
     end
-    H.eq(shown, math.min(14, #T.ns.Shiny.list(T.env.FishDexDB)))
+    H.eq(shown, math.min(12, #T.ns.Shiny.list(T.env.FishDexDB)))
     -- the next page shows the rest
     local next = rawget(win, "next")
     rawget(next, "scripts").OnClick(next)
