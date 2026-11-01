@@ -51,10 +51,30 @@ function Board.score(db)
     return s
 end
 
+Board.NAME_BYTES = 48
+
+-- A character name fit for the wire and the table: no "^", "|" or control character,
+-- spaces trimmed, at most NAME_BYTES bytes cut on a UTF-8 boundary; nil when empty.
+-- Forever names are "First Last" (SO-6 notes), so a space is kept.
+function Board.cleanName(name)
+    if type(name) ~= "string" then return nil end
+    name = name:gsub("[%c%^|]", ""):gsub("^ +", ""):gsub(" +$", ""):gsub(" +", " ")
+    if #name > Board.NAME_BYTES then
+        name = name:sub(1, Board.NAME_BYTES)
+        -- drop a cut multi-byte character: trailing continuation bytes and their lead byte
+        name = name:gsub("[\192-\255][\128-\191]*$", "")
+    end
+    if name == "" then return nil end
+    return name
+end
+
 -- "S" (a score) or "H" (a score from someone who just logged in, who asks for others').
--- "kind^version^id^total^rare^epic^legendary^species": under 60 bytes, never cut.
-function Board.encode(kind, id, s)
-    return table.concat({ kind, Board.VERSION, id, s.total, s.rare, s.epic, s.legendary, s.species }, "^")
+-- "kind^version^id^total^rare^epic^legendary^species^name": under 110 bytes, never cut.
+-- The name travels in the message because Forever's sender names ("First Last") are not
+-- measured yet: what the sender calls itself is shown, the channel's sender is a fallback.
+function Board.encode(kind, id, s, name)
+    return table.concat({ kind, Board.VERSION, id, s.total, s.rare, s.epic, s.legendary, s.species,
+        Board.cleanName(name) or "" }, "^")
 end
 
 local function count(text)
@@ -64,8 +84,8 @@ local function count(text)
     return n
 end
 
--- kind, id, score; nil for anything FishDex would not have sent. Fields after the known
--- ones are ignored, so a later version can add some at the end.
+-- kind, id, score, name (nil when absent); nil for anything FishDex would not have sent.
+-- Fields after the known ones are ignored, so a later version can add some at the end.
 function Board.decode(text)
     if type(text) ~= "string" or #text > 255 then return nil end
     local f = {}
@@ -79,7 +99,7 @@ function Board.decode(text)
         if not s[v] then return nil end
     end
     if s.rare + s.epic + s.legendary > s.total or s.species > s.total then return nil end
-    return f[1], f[3], s
+    return f[1], f[3], s, Board.cleanName(f[9])
 end
 
 -- Scores are kept per guild ("Guild-Realm"): a member who changes guild starts afresh.

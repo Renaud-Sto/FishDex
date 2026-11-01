@@ -56,10 +56,27 @@ function Comm.guildKey()
     return name .. "-" .. tostring(safe(GetRealmName) or "?")
 end
 
--- This account as the ranking shows it.
+-- The player's name as Forever writes it, "First Last": GetUnitName first (under pcall),
+-- else UnitName's two returns, the second being the surname on Forever and the realm
+-- elsewhere (SO-6 notes, Noyau.lua). The realm suffix is dropped.
+function Comm.playerName()
+    local realm = tostring(safe(GetRealmName) or "")
+    local full = safe(GetUnitName, "player", true)
+    if type(full) == "string" and full:find(" ", 1, true) then
+        return Board.cleanName((full:gsub("%-" .. realm:gsub("%p", "%%%0") .. "$", "")))
+    end
+    local ok, first, second = pcall(UnitName, "player")
+    if not ok or not clean(first, second) or type(first) ~= "string" then return nil end
+    if type(second) == "string" and second ~= "" and second ~= realm and not first:find("[ %-]") then
+        first = first .. " " .. second
+    end
+    return Board.cleanName(first)
+end
+
+-- This account as the ranking shows it: one line, named after the character played now.
 function Comm.me()
     local db = ns.Main.db
-    return { id = db.board.id, name = tostring(safe(UnitName, "player") or "?"), score = Board.score(db) }
+    return { id = db.board.id, name = Comm.playerName() or "?", score = Board.score(db) }
 end
 
 local attempt
@@ -93,7 +110,7 @@ attempt = function()
         schedule(Comm.GAP - (now - lastSentAt))
         return
     end
-    local text = Board.encode(pending, db.board.id, Board.score(db))
+    local text = Board.encode(pending, db.board.id, Board.score(db), Comm.playerName())
     local score = text:sub(2)
     if not force and pending == "S" and score == lastScore then
         pending = nil
@@ -142,14 +159,14 @@ end
 function Comm.receive(prefix, text, channel, sender)
     if not clean(prefix, text, channel, sender) then return end
     if prefix ~= Board.PREFIX or channel ~= "GUILD" or type(sender) ~= "string" then return end
-    local kind, id, score = Board.decode(text)
+    local kind, id, score, named = Board.decode(text)
     if not kind then return end
     local db = ns.Main.db
     if id == db.board.id then return end -- this account (another of its characters, or the echo)
     local guild = Comm.guildKey()
     if not guild then return end
-    local name = type(Ambiguate) == "function" and safe(Ambiguate, sender, "none") or sender
-    Board.store(db, guild, id, name or sender, score, time())
+    local name = named or (type(Ambiguate) == "function" and safe(Ambiguate, sender, "none")) or sender
+    Board.store(db, guild, id, name, score, time())
     ns.Main.refresh()
     if kind == "H" and db.settings.share and not replying and pending ~= "H" and not (pending and force) then
         -- One answer covers every newcomer heard before it leaves.

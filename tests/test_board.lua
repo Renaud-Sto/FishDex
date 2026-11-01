@@ -25,8 +25,12 @@ H.test("a score survives the wire; anything FishDex would not send is refused", 
     local s = { total = 120, rare = 3, epic = 1, legendary = 0, species = 14 }
     local text = ns.Board.encode("S", "0a1b2c3d", s)
     H.truthy(#text < 60)
-    H.eq({ ns.Board.decode(text) }, { "S", "0a1b2c3d", s })
-    H.eq({ ns.Board.decode(text .. "^extra") }, { "S", "0a1b2c3d", s }) -- later fields ignored
+    H.eq({ ns.Board.decode(text) }, { "S", "0a1b2c3d", s })   -- no name: the sender's is used
+    local named = ns.Board.encode("S", "0a1b2c3d", s, "Sto Prime")
+    H.eq({ ns.Board.decode(named) }, { "S", "0a1b2c3d", s, "Sto Prime" })
+    H.eq({ ns.Board.decode(named .. "^extra") }, { "S", "0a1b2c3d", s, "Sto Prime" }) -- later fields ignored
+    H.eq(ns.Board.cleanName("  Sto^|  Prime	 "), "Sto Prime")
+    H.eq(#ns.Board.cleanName(string.rep("é", 40)), 46) -- cut on a character boundary
     H.eq(ns.Board.decode("S^2^0a1b2c3d^1^0^0^0^1"), nil)      -- another version
     H.eq(ns.Board.decode("X^1^0a1b2c3d^1^0^0^0^1"), nil)      -- unknown kind
     H.eq(ns.Board.decode("S^1^nothex!!^1^0^0^0^1"), nil)      -- bad id
@@ -101,7 +105,7 @@ H.test("login sends one hello on the guild channel; fishing sends the score only
     H.eq(#T.sent, 1)
     H.eq(T.sent[1][1], "FishDex")
     H.eq(T.sent[1][3], "GUILD")
-    H.truthy(T.sent[1][2]:match("^H%^1%^%x+%^0%^0%^0%^0%^0$"))
+    H.truthy(T.sent[1][2]:match("^H%^1%^%x+%^0%^0%^0%^0%^0%^Moi$"))
     T.clock = T.clock + 60
     fish(T, 6291)
     fish(T, 6291)
@@ -109,7 +113,7 @@ H.test("login sends one hello on the guild channel; fishing sends the score only
     T.clock = T.clock + 121
     T.run()
     H.eq(#T.sent, 2)
-    H.truthy(T.sent[2][2]:match("^S%^1%^%x+%^2%^0%^0%^0%^1$"))
+    H.truthy(T.sent[2][2]:match("^S%^1%^%x+%^2%^0%^0%^0%^1%^Moi$"))
     -- the same score is not sent twice
     T.ns.Comm.onCatch()
     T.clock = T.clock + 121
@@ -211,4 +215,16 @@ H.test("the minimap button opens the window and can be hidden", function()
     T.env.SlashCmdList.FISHDEX("minimap")
     H.falsy(b:IsShown())
     H.eq(T.env.FishDexDB.settings.minimap.hide, true)
+end)
+
+H.test("Forever names: First Last from UnitName's surname, sent in the message and shown", function()
+    local T = boot()
+    T.env.UnitName = function() return "Sto", "Prime" end
+    H.eq(T.ns.Comm.playerName(), "Sto Prime")
+    T.env.GetUnitName = function() return "Sto Prime-Royaume" end
+    H.eq(T.ns.Comm.playerName(), "Sto Prime")
+    T.env.GetUnitName, T.env.UnitName = nil, function() return "Moi", "Royaume" end
+    H.eq(T.ns.Comm.playerName(), "Moi") -- elsewhere the second return is the realm
+    T.fire("CHAT_MSG_ADDON", "FishDex", "S^1^0000beef^40^2^1^0^7^Kanye Est", "GUILD", "Kanye-Royaume")
+    H.eq(T.env.FishDexDB.board.guilds["La Guilde-Royaume"]["0000beef"].name, "Kanye Est")
 end)
