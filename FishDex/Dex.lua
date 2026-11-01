@@ -22,7 +22,11 @@ Dex.DEFAULTS = {
     board = { id = "", forced = {}, guilds = {}, chars = {} },
     -- sounds[target] = SOUNDKIT key; locale "": the client's; minimap.angle in degrees.
     settings = { sound = true, announce = true, share = true, locale = "", sounds = {},
-        minimap = { hide = false, angle = 200 } },
+        minimap = { hide = false, angle = 200 },
+        -- lureButton: the lure button while a pole is equipped; lure.id = the lure it offers
+        -- (0: the best in the bags), lure.x/y its place; doubleCast: RightButton, LeftButton
+        -- or off.
+        lureButton = true, lure = { id = 0 }, doubleCast = "RightButton" },
 }
 
 local byID = {}

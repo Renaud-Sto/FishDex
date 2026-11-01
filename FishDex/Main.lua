@@ -126,6 +126,12 @@ local function slash(msg)
         Main.toggleSetting("sound", L.SOUND_ON, L.SOUND_OFF)
     elseif cmd == "annonce" or cmd == "announce" then
         Main.toggleSetting("announce", L.ANNOUNCE_ON, L.ANNOUNCE_OFF)
+    elseif cmd == "appat" or cmd == "lure" then
+        Main.say(ns.LureButton.toggle() and L.LURE_ON or L.LURE_OFF)
+        Main.refresh()
+    elseif cmd == "clic" or cmd == "click" then
+        Main.say(L["DOUBLE_" .. ns.DoubleCast.cycle()])
+        Main.refresh()
     elseif cmd == "minimap" then
         local m = Main.db.settings.minimap
         m.hide = not m.hide

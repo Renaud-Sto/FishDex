@@ -14,6 +14,7 @@ Data.lua
 Dex.lua
 Shiny.lua
 Board.lua
+Lures.lua
 SoundList.lua
 Sounds.lua
 Detect.lua
@@ -25,3 +26,5 @@ UI/BoardView.lua
 UI/Window.lua
 UI/SoundPicker.lua
 UI/MinimapButton.lua
+UI/LureButton.lua
+UI/DoubleCast.lua

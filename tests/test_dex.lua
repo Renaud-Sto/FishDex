@@ -41,7 +41,7 @@ H.test("saved data is repaired in place and bad catch records are dropped", func
     H.truthy(db == saved)
     H.eq(saved.catches, { [6291] = { count = 1 } })
     H.eq(saved.settings, { sound = true, announce = true, share = true, locale = "", sounds = {},
-        minimap = { hide = false, angle = 200 } })
+        minimap = { hide = false, angle = 200 }, lureButton = true, lure = { id = 0 }, doubleCast = "RightButton" })
 end)
 
 H.test("recipe state: unscanned until a profession window was read, then known or unknown", function()

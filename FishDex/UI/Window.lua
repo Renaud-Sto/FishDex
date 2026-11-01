@@ -63,6 +63,7 @@ local function check(parent, text, key)
         -- Sharing back on: the guild gets the score now rather than after the next fishing.
         if key == "share" and on then ns.Comm.queue("S", true) end
         if key == "share" then Window.refresh() end
+        if key == "lureButton" then ns.LureButton.update() end
         sound(on and "IG_MAINMENU_OPTION_CHECKBOX_ON" or "IG_MAINMENU_OPTION_CHECKBOX_OFF")
     end)
     c.key = key
@@ -388,6 +389,14 @@ local function build()
     f.announce:SetPoint("LEFT", f.sound, "RIGHT", 90, 0)
     f.share = check(content, L.OPT_SHARE, "share")
     f.share:SetPoint("LEFT", f.announce, "RIGHT", 90, 0)
+    f.lure = check(content, L.OPT_LURE, "lureButton")
+    f.lure:SetPoint("LEFT", f.share, "RIGHT", 90, 0)
+    -- Double click to fish: right, left, off, one click each.
+    f.castMode = button(content, 170, 22, "", function()
+        ns.DoubleCast.cycle()
+        Window.refreshChecks()
+    end)
+    f.castMode:SetPoint("LEFT", f.lure, "RIGHT", 80, 0)
     f.soundsButton = button(content, 110, 22, L.SOUNDS_BUTTON, function() ns.SoundPicker.toggle() end)
     f.soundsButton:SetPoint("BOTTOMRIGHT", content, "BOTTOMRIGHT", -12, 10)
 
@@ -605,7 +614,9 @@ end
 function Window.refreshChecks()
     local s = ns.Main.db.settings
     f.soundsButton:SetText(L.SOUNDS_BUTTON)
-    for _, c in ipairs({ { f.sound, L.OPT_SOUND }, { f.announce, L.OPT_ANNOUNCE }, { f.share, L.OPT_SHARE } }) do
+    f.castMode:SetText(L["DOUBLE_" .. ns.DoubleCast.mode()])
+    for _, c in ipairs({ { f.sound, L.OPT_SOUND }, { f.announce, L.OPT_ANNOUNCE }, { f.share, L.OPT_SHARE },
+        { f.lure, L.OPT_LURE } }) do
         if type(c[1].Text) == "table" then c[1].Text:SetText(c[2]) end
         c[1]:SetChecked(s[c[1].key])
     end
