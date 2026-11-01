@@ -280,13 +280,27 @@ local function build()
     content:SetFrameLevel((f:GetFrameLevel() or 1) + 2)
     f.content = content
 
+    -- The whole top of the window, title bar included, in the same carved wood as the
+    -- headers (renaud, 2026-11-01): a texture of the window itself, so the border, the
+    -- portrait and the title (child frames) draw over it.
+    f.topWood = f:CreateTexture(nil, "BORDER")
+    f.topWood:SetPoint("TOPLEFT", f, "TOPLEFT", 2, -1)
+    f.topWood:SetPoint("BOTTOMRIGHT", f, "TOPRIGHT", -2, -60)
+    if Kit.art(f.topWood, "questlog-reward-header-top") then f.topWood:SetTexCoord(0, 1, 0.2, 0.97) end
+
     -- Top strip: the progress bar (Collection and Shiny tabs).
     f.progress = progressBar()
 
     -- Sections with CraftProfit's carved wood headers: the grid, the detail, the ranking.
     f.list = Kit.panel(content)
+    -- One wood header across both columns (two strips left a gap that cut the colour):
+    -- the category and its count over the grid, "Details" over the detail column.
     f.list.frame:SetPoint("TOPLEFT", content, "TOPLEFT", 6, -6)
-    f.list.frame:SetPoint("BOTTOMRIGHT", content, "BOTTOMLEFT", SPLIT, 40)
+    f.list.frame:SetPoint("BOTTOMRIGHT", content, "BOTTOMRIGHT", -6, 40)
+    f.list.right:ClearAllPoints()
+    f.list.right:SetPoint("RIGHT", f.list.head, "LEFT", SPLIT - 14, 0)
+    f.infoTitle = f.list.head:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    f.infoTitle:SetPoint("LEFT", f.list.head, "LEFT", SPLIT + 8, 0)
     f.grid = CreateFrame("Frame", nil, f.list.body)
     f.grid:SetPoint("TOPLEFT", f.list.body, "TOPLEFT", 16, -8)
     f.grid:SetSize(COLS * CELL_W, ROWS * CELL_H)
@@ -295,7 +309,7 @@ local function build()
     -- Pages, as in the Toy Box: "Page 1/3" and the spellbook arrows.
     f.paging = CreateFrame("Frame", nil, f.list.body)
     f.paging:SetSize(70, 32)
-    f.paging:SetPoint("BOTTOMRIGHT", f.list.body, "BOTTOMRIGHT", -6, 2)
+    f.paging:SetPoint("BOTTOMRIGHT", f.list.body, "BOTTOMLEFT", SPLIT - 10, 2)
     f.prev = CreateFrame("Button", nil, f.paging)
     f.prev:SetSize(32, 32)
     f.prev:SetPoint("LEFT", f.paging, "LEFT", 0, 0)
@@ -325,10 +339,9 @@ local function build()
         Window.refresh()
     end)
 
-    f.info = Kit.panel(content)
-    f.info.frame:SetPoint("TOPLEFT", content, "TOPLEFT", SPLIT + 8, -6)
-    f.info.frame:SetPoint("BOTTOMRIGHT", content, "BOTTOMRIGHT", -6, 40)
-    f.detail = f.info.body
+    f.detail = CreateFrame("Frame", nil, f.list.body)
+    f.detail:SetPoint("TOPLEFT", f.list.body, "TOPLEFT", SPLIT + 2, 0)
+    f.detail:SetPoint("BOTTOMRIGHT", f.list.body, "BOTTOMRIGHT", 0, 0)
     local face = f.detail
     f.bigIcon = face:CreateTexture(nil, "ARTWORK")
     f.bigIcon:SetSize(40, 40)
@@ -566,7 +579,6 @@ function Window.refresh()
     Window.refreshChecks()
     local onBoard = state.tab == "board"
     f.list.frame:SetShown(not onBoard)
-    f.info.frame:SetShown(not onBoard)
     f.ranking.frame:SetShown(onBoard)
     ns.BoardView.setShown(onBoard)
     -- The bar: the whole dex (or every shiny), like a profession's skill bar.
@@ -583,7 +595,7 @@ function Window.refresh()
     local caughtN, totalN = Dex.progress(db, cat)
     f.list.title:SetText(L["CAT_" .. cat])
     f.list.right:SetText(string.format("%d / %d", caughtN, totalN))
-    f.info.title:SetText(L.DETAIL_HEAD)
+    f.infoTitle:SetText(L.DETAIL_HEAD)
     local entries = Dex.list(db, cat)
     refreshSlots(db, entries)
     showDetail(entries)
