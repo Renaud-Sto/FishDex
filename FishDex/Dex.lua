@@ -19,7 +19,9 @@ Dex.DEFAULTS = {
     -- Guild ranking (Board.lua): id = this account's, forced[grade] = shinytest shinies,
     -- guilds["Guild-Realm"][id] = the last score heard from that account.
     board = { id = "", forced = {}, guilds = {} },
-    settings = { sound = true, announce = true, share = true, locale = "", sounds = {} }, -- sounds[target] = SOUNDKIT key -- locale "": the client's
+    -- sounds[target] = SOUNDKIT key; locale "": the client's; minimap.angle in degrees.
+    settings = { sound = true, announce = true, share = true, locale = "", sounds = {},
+        minimap = { hide = false, angle = 200 } },
 }
 
 local byID = {}

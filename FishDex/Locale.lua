@@ -33,7 +33,7 @@ local enUS = {
     OPT_SOUND = "Sound",
     OPT_ANNOUNCE = "Announce",
     SELECT_HINT = "Select an entry to see its details.",
-    HELP = "/fishdex: open the window. /fishdex sound, /fishdex announce: toggle them. /fishdex fr, en, auto: addon language.",
+    HELP = "/fishdex: open the window. /fishdex sound, /fishdex announce, /fishdex minimap: toggle them. /fishdex fr, en, auto: addon language.",
     SOUND_ON = "new catch sound on",
     SOUND_OFF = "new catch sound off",
     ANNOUNCE_ON = "new catch announce on",
@@ -80,7 +80,7 @@ local enUS = {
     CAT_board = "Guild",
     OPT_SHARE = "Share",
     BOARD_COUNT = "%d anglers with FishDex",
-    BOARD_NO_GUILD = "Not in a guild: no ranking.",
+    BOARD_NO_GUILD = "Not in a guild: only your own score is shown.",
     BOARD_EMPTY = "No guild member seen with FishDex yet.",
     BOARD_SHARE_OFF = "Sharing is off: the guild does not see your score.",
     BOARD_HINT = "A score is sent 2 min after its angler stops fishing. Click a column to sort.",
@@ -99,6 +99,10 @@ local enUS = {
     PAGE = "Page %d/%d",
     DETAIL_HEAD = "Details",
     BOARD_TITLE = "Guild ranking",
+    MINIMAP_TIP_LEFT = "Click: open FishDex",
+    MINIMAP_TIP_DRAG = "Drag: move this button",
+    MINIMAP_ON = "minimap button shown",
+    MINIMAP_OFF = "minimap button hidden (/fishdex minimap brings it back)",
 }
 
 local frFR = {
@@ -129,7 +133,7 @@ local frFR = {
     OPT_SOUND = "Son",
     OPT_ANNOUNCE = "Annonce",
     SELECT_HINT = "Choisis une entrée pour voir ses détails.",
-    HELP = "/fishdex : ouvre la fenêtre. /fishdex son, /fishdex annonce : les active ou non. /fishdex fr, en, auto : langue de l'addon.",
+    HELP = "/fishdex : ouvre la fenêtre. /fishdex son, /fishdex annonce, /fishdex minimap : les active ou non. /fishdex fr, en, auto : langue de l'addon.",
     SOUND_ON = "son des nouvelles prises activé",
     SOUND_OFF = "son des nouvelles prises désactivé",
     ANNOUNCE_ON = "annonce des nouvelles prises activée",
@@ -176,7 +180,7 @@ local frFR = {
     CAT_board = "Guilde",
     OPT_SHARE = "Partager",
     BOARD_COUNT = "%d pêcheurs avec FishDex",
-    BOARD_NO_GUILD = "Pas de guilde : pas de classement.",
+    BOARD_NO_GUILD = "Pas de guilde : seul ton score est affiché.",
     BOARD_EMPTY = "Aucun membre de la guilde vu avec FishDex pour l'instant.",
     BOARD_SHARE_OFF = "Partage désactivé : la guilde ne voit pas ton score.",
     BOARD_HINT = "Un score part 2 min après la fin d'une pêche. Clique une colonne pour trier.",
@@ -195,6 +199,10 @@ local frFR = {
     PAGE = "Page %d/%d",
     DETAIL_HEAD = "Fiche",
     BOARD_TITLE = "Classement de la guilde",
+    MINIMAP_TIP_LEFT = "Clic : ouvrir FishDex",
+    MINIMAP_TIP_DRAG = "Glisser : déplacer ce bouton",
+    MINIMAP_ON = "bouton de la minicarte affiché",
+    MINIMAP_OFF = "bouton de la minicarte masqué (/fishdex minimap le remet)",
 }
 
 ns.LOCALES = { enUS = enUS, frFR = frFR }

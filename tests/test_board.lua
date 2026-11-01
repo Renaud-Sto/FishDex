@@ -184,3 +184,31 @@ H.test("a forced shinytest shiny does not count in the ranking", function()
     H.eq(T.ns.Shiny.best(db, 6291), "legendary")
     H.eq(T.ns.Board.score(db).legendary, 0)
 end)
+
+H.test("without a guild the Guild tab still shows this account's own line", function()
+    local T = boot()
+    T.env.IsInGuild = function() return false end
+    T.env.SlashCmdList.FISHDEX("")
+    local tab
+    for _, fr in ipairs(T.frames) do if rawget(fr, "tab") == "board" then tab = fr end end
+    rawget(tab, "scripts").OnClick(tab)
+    local win = T.env.FishDexWindow
+    H.truthy(rawget(rawget(win, "ranking"), "right").text:find("1 pêcheurs", 1, true))
+    local rows = T.ns.Board.rows(T.env.FishDexDB, nil, T.ns.Comm.me())
+    H.eq(#rows, 1)
+    H.truthy(rows[1].me)
+end)
+
+H.test("the minimap button opens the window and can be hidden", function()
+    local W2 = dofile("tests/fakewow.lua")
+    local T = W2.boot(H, { locale = "frFR" })
+    T.env.Minimap = W2.frame("Frame", "Minimap")
+    T.fire("ADDON_LOADED", H.ADDON)
+    local b = T.env.FishDexMinimapButton
+    H.truthy(b)
+    rawget(b, "scripts").OnClick(b, "LeftButton")
+    H.truthy(T.env.FishDexWindow:IsShown())
+    T.env.SlashCmdList.FISHDEX("minimap")
+    H.falsy(b:IsShown())
+    H.eq(T.env.FishDexDB.settings.minimap.hide, true)
+end)

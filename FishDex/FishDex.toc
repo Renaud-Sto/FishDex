@@ -24,3 +24,4 @@ UI/Kit.lua
 UI/BoardView.lua
 UI/Window.lua
 UI/SoundPicker.lua
+UI/MinimapButton.lua

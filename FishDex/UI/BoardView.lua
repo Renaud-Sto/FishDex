@@ -103,7 +103,8 @@ function BoardView.refresh()
         end
     end
     local guild = ns.Comm.guildKey()
-    local list = guild and ns.Board.rows(db, guild, ns.Comm.me(), state.sort) or {}
+    -- Without a guild the table still shows this account's own line.
+    local list = ns.Board.rows(db, guild, ns.Comm.me(), state.sort)
     state.offset = math.min(state.offset, math.max(0, #list - VISIBLE))
     for i, r in ipairs(rows) do
         local row = list[state.offset + i]
@@ -135,5 +136,5 @@ function BoardView.refresh()
         note = L.BOARD_EMPTY
     end
     v.note:SetText(note)
-    return string.format(L.BOARD_COUNT, guild and #list or 0)
+    return string.format(L.BOARD_COUNT, #list)
 end

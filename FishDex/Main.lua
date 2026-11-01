@@ -87,6 +87,7 @@ function Main.init()
     ns.Board.ensureId(Main.db, math.random)
     if Main.db.settings.locale ~= "" then ns.setLocale(Main.db.settings.locale) end
     Main.ready = true
+    ns.MinimapButton.apply()
 end
 
 function Main.toggleSetting(key, onText, offText)
@@ -125,6 +126,11 @@ local function slash(msg)
         Main.toggleSetting("sound", L.SOUND_ON, L.SOUND_OFF)
     elseif cmd == "annonce" or cmd == "announce" then
         Main.toggleSetting("announce", L.ANNOUNCE_ON, L.ANNOUNCE_OFF)
+    elseif cmd == "minimap" then
+        local m = Main.db.settings.minimap
+        m.hide = not m.hide
+        ns.MinimapButton.apply()
+        Main.say(m.hide and L.MINIMAP_OFF or L.MINIMAP_ON)
     elseif cmd == "fr" or cmd == "en" or cmd == "auto" then
         -- Addon texts only: item, zone and recipe names stay in the client's language.
         local locale = cmd == "fr" and "frFR" or cmd == "en" and "enUS" or ""
