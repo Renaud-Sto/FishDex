@@ -13,12 +13,12 @@ local paint = Kit.paint
 local ROW_H, VISIBLE = 18, 18
 -- key (sort key; nil: not sortable), width, label key, justify.
 local COLUMNS = {
-    { width = 40, label = "COL_RANK", justify = "RIGHT" },
+    { width = 40, label = "COL_RANK", justify = "CENTER" },
     { key = "name", width = 192, label = "COL_NAME", justify = "LEFT" },
-    { key = "total", width = 80, label = "COL_TOTAL", justify = "RIGHT" },
-    { key = "rare", width = 76, label = "COL_RARE", justify = "RIGHT" },
-    { key = "epic", width = 76, label = "COL_EPIC", justify = "RIGHT" },
-    { key = "legendary", width = 92, label = "COL_LEGENDARY", justify = "RIGHT" },
+    { key = "total", width = 80, label = "COL_TOTAL", justify = "CENTER" },
+    { key = "rare", width = 76, label = "COL_RARE", justify = "CENTER" },
+    { key = "epic", width = 76, label = "COL_EPIC", justify = "CENTER" },
+    { key = "legendary", width = 92, label = "COL_LEGENDARY", justify = "CENTER" },
     { width = 88, label = "COL_SEEN", justify = "RIGHT" },
 }
 
@@ -74,11 +74,31 @@ function BoardView.build(parent, raise)
         for c, col in ipairs(COLUMNS) do
             local fs = face:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
             fs:SetPoint("TOPLEFT", face, "TOPLEFT", col.x, -34 - (i - 1) * ROW_H)
-            fs:SetSize(col.width - 8, ROW_H)
+            fs:SetSize(col.width - 4, ROW_H)
             fs:SetJustifyH(col.justify)
             fs:SetWordWrap(false)
             r[c] = fs
         end
+        -- Alternate rows, as the auction house lists: a light stripe on every other row,
+        -- a darker one between; this account's row tinted gold. Textures of the view, under
+        -- the text (a child frame would draw over it).
+        local top = -34 - (i - 1) * ROW_H
+        r.stripe = face:CreateTexture(nil, "BORDER")
+        r.stripe:SetPoint("TOPLEFT", face, "TOPLEFT", 4, top)
+        r.stripe:SetPoint("RIGHT", face, "RIGHT", -4, 0)
+        r.stripe:SetHeight(ROW_H)
+        if i % 2 == 1 then
+            if Kit.art(r.stripe, "auctionhouse-rowstripe-1") then r.stripe:SetAlpha(0.6) else
+                r.stripe:Show()
+                r.stripe:SetColorTexture(1, 1, 1, 0.05)
+            end
+        else
+            r.stripe:SetColorTexture(0, 0, 0, 0.25)
+        end
+        r.mine = face:CreateTexture(nil, "ARTWORK")
+        r.mine:SetAllPoints(r.stripe)
+        r.mine:SetColorTexture(GOLD[1], GOLD[2], GOLD[3], 0.12)
+        r.mine:Hide()
         -- The whole row answers the mouse: highlight, and the account's characters.
         local hit = CreateFrame("Button", nil, face)
         hit:SetPoint("TOPLEFT", face, "TOPLEFT", 4, -34 - (i - 1) * ROW_H)
@@ -89,6 +109,19 @@ function BoardView.build(parent, raise)
         hit:SetScript("OnLeave", function() if type(GameTooltip) == "table" then GameTooltip:Hide() end end)
         r.hit = hit
         rows[i] = r
+    end
+    -- Thin gold rules: under the header, and between the columns down the table.
+    local bottom = -34 - VISIBLE * ROW_H
+    local rule = face:CreateTexture(nil, "ARTWORK")
+    rule:SetPoint("TOPLEFT", face, "TOPLEFT", 4, -31)
+    rule:SetPoint("RIGHT", face, "RIGHT", -4, 0)
+    rule:SetHeight(1)
+    rule:SetColorTexture(GOLD[1], GOLD[2], GOLD[3], 0.35)
+    for c = 2, #COLUMNS do
+        local line = face:CreateTexture(nil, "ARTWORK")
+        line:SetPoint("TOPLEFT", face, "TOPLEFT", COLUMNS[c].x - 3, -31)
+        line:SetSize(1, -31 - bottom)
+        line:SetColorTexture(GOLD[1], GOLD[2], GOLD[3], 0.15)
     end
     v.note = face:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
     v.note:SetPoint("BOTTOMLEFT", face, "BOTTOMLEFT", 10, 8)
@@ -146,10 +179,12 @@ function BoardView.refresh()
             end
             r.hit.row = row
             r.hit:Show()
+            r.mine:SetShown(row.me == true)
         else
             for _, fs in ipairs(r) do fs:SetText("") end
             r.hit.row = nil
             r.hit:Hide()
+            r.mine:Hide()
         end
     end
     local note = L.BOARD_HINT
@@ -161,5 +196,5 @@ function BoardView.refresh()
         note = L.BOARD_EMPTY
     end
     v.note:SetText(note)
-    return string.format(L.BOARD_COUNT, #list)
+    return #list == 1 and L.BOARD_COUNT_ONE or string.format(L.BOARD_COUNT, #list)
 end

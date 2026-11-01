@@ -197,7 +197,7 @@ H.test("without a guild the Guild tab still shows this account's own line", func
     for _, fr in ipairs(T.frames) do if rawget(fr, "tab") == "board" then tab = fr end end
     rawget(tab, "scripts").OnClick(tab)
     local win = T.env.FishDexWindow
-    H.truthy(rawget(rawget(win, "ranking"), "right").text:find("1 pêcheurs", 1, true))
+    H.truthy(rawget(rawget(win, "ranking"), "right").text:find("1 pêcheur avec", 1, true))
     local rows = T.ns.Board.rows(T.env.FishDexDB, nil, T.ns.Comm.me())
     H.eq(#rows, 1)
     H.truthy(rows[1].me)
