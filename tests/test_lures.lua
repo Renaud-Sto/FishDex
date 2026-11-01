@@ -95,3 +95,16 @@ H.test("a double right click on the world binds the right button to the fishing 
     DC.onWorldDown("RightButton")
     H.eq(#T.bindings, 1)
 end)
+
+H.test("test mode: without a pole, /fishdex testcanne shows the button until turned off", function()
+    local T = boot()
+    T.pole = nil
+    T.fire("PLAYER_EQUIPMENT_CHANGED")
+    local b = T.env.FishDexLureButton
+    H.falsy(b and b:IsShown())
+    T.env.SlashCmdList.FISHDEX("testcanne")
+    b = T.env.FishDexLureButton
+    H.truthy(b and b:IsShown())
+    T.env.SlashCmdList.FISHDEX("testcanne")
+    H.falsy(b:IsShown())
+end)

@@ -39,7 +39,13 @@ local function inCombat() return safe(InCombatLockdown) == true end
 
 local function settings() return ns.Main.db.settings.lure end
 
+-- Test mode (/fishdex poletest, this session only): Retail has no equippable fishing
+-- pole any more (renaud, 2026-11-01), so the button and the double click act as if one
+-- were equipped. Putting a lure on slot 16 may then do nothing on Retail.
+LureButton.testPole = false
+
 function LureButton.poleEquipped()
+    if LureButton.testPole then return true end
     local id = safe(GetInventoryItemID, "player", POLE_SLOT)
     local info = type(C_Item) == "table" and C_Item.GetItemInfoInstant
     if type(id) ~= "number" or type(info) ~= "function" then return false end

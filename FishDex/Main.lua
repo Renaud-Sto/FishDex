@@ -129,6 +129,10 @@ local function slash(msg)
     elseif cmd == "appat" or cmd == "lure" then
         Main.say(ns.LureButton.toggle() and L.LURE_ON or L.LURE_OFF)
         Main.refresh()
+    elseif cmd == "poletest" or cmd == "testcanne" then
+        ns.LureButton.testPole = not ns.LureButton.testPole
+        ns.LureButton.update()
+        Main.say(ns.LureButton.testPole and L.POLE_TEST_ON or L.POLE_TEST_OFF)
     elseif cmd == "clic" or cmd == "click" then
         Main.say(L["DOUBLE_" .. ns.DoubleCast.cycle()])
         Main.refresh()
