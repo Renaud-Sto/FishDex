@@ -7,6 +7,7 @@
 ## IconTexture: Interface\Icons\Trade_Fishing
 ## AddonCompartmentFunc: FishDex_OnCompartmentClick
 ## SavedVariables: FishDexDB
+## X-Website: https://github.com/Renaud-Sto/FishDex
 ## X-License: MIT
 
 Locale.lua

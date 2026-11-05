@@ -9,3 +9,5 @@ New
 
 Known limitations
 - Fishing zones come from Classic data; a catch counts wherever it happens.
+
+Full changelog: https://github.com/Renaud-Sto/FishDex/blob/main/CHANGELOG.md

@@ -31,3 +31,5 @@ WoW Forever (Interface 16001), tested on build 1.60.1.70790. English and French.
 - The fishing zones come from Classic data: Forever may place some fish elsewhere. A catch always counts, wherever it happens.
 - Shinies are rolled by the addon on your computer: they are for fun, not proof.
 - If you used Better Fishing, turn it off: two double-click casters get in each other's way.
+
+Source and issues: https://github.com/Renaud-Sto/FishDex

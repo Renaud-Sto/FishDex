@@ -33,3 +33,5 @@ First public release, tested on WoW Forever build 1.60.1.70790 (Interface 16001)
 - The fishing zones come from Classic data: a fish caught somewhere the list does not name still
   counts, the zones list is not updated.
 
+[Unreleased]: https://github.com/Renaud-Sto/FishDex/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/Renaud-Sto/FishDex/releases/tag/v1.0.0
