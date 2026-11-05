@@ -9,3 +9,4 @@ A fishing collection for WoW Forever: every fish, rare fish, trophy, wreck and i
 - Checks: `sh tests/check.sh` (LuaJIT tests + luacheck, zero warnings).
 
 - Release notes: `CHANGELOG.md`; CurseForge texts and checklist: `docs/curseforge/`; zip: `python tools/build_zip.py` (dist/FishDex-<version>.zip). MIT license.
+- Download: CurseForge project 1784966, or the GitHub releases (https://github.com/Renaud-Sto/FishDex/releases). New version: bump the TOC, add `docs/curseforge/changelog-X.Y.Z.md`, push tag `vX.Y.Z`.
