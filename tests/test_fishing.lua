@@ -6,6 +6,8 @@ local W = dofile("tests/fakewow.lua")
 
 local function pure() return H.newNS("Locale", "Data", "Dex", "Shiny", "Lures", "Fishing").Fishing end
 
+local function copy(t) local o = {} for k, v in pairs(t) do o[k] = v end return o end
+
 local function store(values)
     local cv = values
     return cv, function(k) return cv[k] end, function(k, v) cv[k] = v end
@@ -17,26 +19,31 @@ H.test("the options want names off and effects up, music and ambience off", func
     local w = F.wanted({ hideNames = true, loudSounds = true, loudVolume = 0.8 })
     H.eq(w.UnitNameNPC, "0")
     H.eq(w.nameplateShowFriendlyNPCs, "0")
-    H.eq({ w.Sound_SFXVolume, w.Sound_MusicVolume, w.Sound_AmbienceVolume }, { "0.80", "0", "0" })
-    H.eq(F.soundCVars(7).Sound_SFXVolume, "1.00")
+    H.eq({ w.Sound_MasterVolume, w.Sound_SFXVolume, w.Sound_MusicVolume, w.Sound_AmbienceVolume,
+        w.Sound_DialogVolume }, { "0.80", "1", "0", "0", "0" })
+    H.eq(F.soundCVars(7).Sound_MasterVolume, "1.00")
     H.truthy(F.same("1", "1.000000"))
     H.falsy(F.same("1", "0.5"))
 end)
 
 H.test("a CVar is saved once, put back at the end, and the player's own change wins", function()
     local F = pure()
-    local cv, get, set = store({ Sound_SFXVolume = "0.5", Sound_MusicVolume = "0.4", Sound_AmbienceVolume = "0.6" })
+    local cv, get, set = store({ Sound_MasterVolume = "0.35", Sound_SFXVolume = "1", Sound_MusicVolume = "0.4",
+        Sound_AmbienceVolume = "0.6", Sound_DialogVolume = "1" })
+    local before = copy(cv)
     local saved = {}
     F.apply(saved, F.wanted({ loudSounds = true, loudVolume = 1 }), get, set)
-    H.eq(cv, { Sound_SFXVolume = "1.00", Sound_MusicVolume = "0", Sound_AmbienceVolume = "0" })
+    H.eq(cv, { Sound_MasterVolume = "1.00", Sound_SFXVolume = "1", Sound_MusicVolume = "0",
+        Sound_AmbienceVolume = "0", Sound_DialogVolume = "0" })
     -- a second apply (slider moved) keeps the first saved value
     F.apply(saved, F.wanted({ loudSounds = true, loudVolume = 0.6 }), get, set)
-    H.eq(saved.Sound_SFXVolume, { was = "0.5", now = "0.60" })
-    H.eq(cv.Sound_SFXVolume, "0.60")
+    H.eq(saved.Sound_MasterVolume, { was = "0.35", now = "0.60" })
+    H.eq(cv.Sound_MasterVolume, "0.60")
     -- the player turns the music back on while fishing: kept at the end
     cv.Sound_MusicVolume = "0.9"
     F.restore(saved, get, set)
-    H.eq(cv, { Sound_SFXVolume = "0.5", Sound_MusicVolume = "0.9", Sound_AmbienceVolume = "0.6" })
+    before.Sound_MusicVolume = "0.9"
+    H.eq(cv, before)
     H.eq(saved, {})
     -- a CVar this client lacks is never written
     F.apply(saved, F.wanted({ hideNames = true }), get, set)
@@ -93,8 +100,6 @@ end
 
 local CV = { UnitNameNPC = "1", UnitNameFriendlySpecialNPCName = "1", UnitNameInteractiveNPC = "1",
     UnitNameNonCombatCreatureName = "1", nameplateShowFriendlyNPCs = "1" }
-local function copy(t) local o = {} for k, v in pairs(t) do o[k] = v end return o end
-
 H.test("names are hidden from the cast to 20 s after the last catch, even through a long cast", function()
     local T = boot(copy(CV))
     T.env.FishDexDB.settings.hideNames = true

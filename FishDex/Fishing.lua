@@ -18,14 +18,18 @@ Fishing.NAME_CVARS = {
     nameplateShowFriendlyNPCs = "0",
 }
 
--- Louder splash: effects at `volume` (0..1), music and ambience off.
+-- Louder splash: the master volume at `volume` (0..1) and effects at full, music,
+-- ambience and dialog off. Effects alone are not enough: renaud's are at 100 % already
+-- under a 35 % master volume (seen 2026-11-05), and the game plays nothing above 100 %.
 function Fishing.soundCVars(volume)
     if type(volume) ~= "number" then volume = 1 end
     volume = math.max(0, math.min(1, volume))
     return {
-        Sound_SFXVolume = string.format("%.2f", volume),
+        Sound_MasterVolume = string.format("%.2f", volume),
+        Sound_SFXVolume = "1",
         Sound_MusicVolume = "0",
         Sound_AmbienceVolume = "0",
+        Sound_DialogVolume = "0",
     }
 end
 
