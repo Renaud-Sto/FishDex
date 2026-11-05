@@ -1,0 +1,20 @@
+# CurseForge submission, FishDex 1.0.0
+
+| Item | Value | Status |
+| --- | --- | --- |
+| Name | FishDex | check that the name is free on CurseForge |
+| Summary | A fishing collection for WoW Forever: every fish, trophy and wreck you can fish, filled as you catch them. | ready |
+| Description | `description.md` (paste as is) | ready |
+| Changelog | `changelog-1.0.0.md` | ready |
+| File | `dist/FishDex-1.0.0.zip` (`python tools/build_zip.py`, one top folder `FishDex/`) | built locally |
+| Release type | **Beta** advised until the guild ranking is tested between two players | to choose on upload |
+| Game version | WoW Forever / the build CurseForge offers for 1.60.1 | to choose on upload |
+| License | MIT | to choose on the form |
+| Categories | Professions (Fishing); Achievements / Collections if offered | to choose on the form |
+| Icon | `docs/curseforge/icon.png`, square PNG, at least 400 x 400, original (not a Blizzard icon) | **missing** |
+| Screenshots | `docs/screenshots/`, titles in `screenshots.md` | **missing** |
+
+Not shipped in the zip: the probe, tests, tools, docs. Hidden test commands stay in the addon
+(`/fishdex shinytest`, `/fishdex testcanne`); a forced shiny never counts in the guild ranking.
+
+After the first upload: add `## X-Curse-Project-ID: <id>` to the TOC.
