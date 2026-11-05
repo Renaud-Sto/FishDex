@@ -79,6 +79,7 @@ end
 
 function Main.refresh()
     if ns.Window and ns.Window.refresh then ns.Window.refresh() end
+    if ns.Options and ns.Options.refresh then ns.Options.refresh() end
 end
 
 function Main.init()

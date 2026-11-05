@@ -46,30 +46,6 @@ local function sound(key)
     end
 end
 
-local function check(parent, text, key)
-    local c = CreateFrame("CheckButton", nil, nil, "UICheckButtonTemplate")
-    c:SetParent(parent)
-    c:SetSize(24, 24)
-    if type(c.Text) == "table" then
-        c.Text:SetFontObject("GameFontHighlightSmall")
-        c.Text:SetText(text)
-        c.Text:ClearAllPoints()
-        c.Text:SetPoint("LEFT", c, "RIGHT", 0, 1)
-        c:SetHitRectInsets(0, -70, 0, 0)
-    end
-    c:SetScript("OnClick", function(self)
-        local on = self:GetChecked() and true or false
-        ns.Main.db.settings[key] = on
-        -- Sharing back on: the guild gets the score now rather than after the next fishing.
-        if key == "share" and on then ns.Comm.queue("S", true) end
-        if key == "share" then Window.refresh() end
-        if key == "lureButton" then ns.LureButton.update() end
-        sound(on and "IG_MAINMENU_OPTION_CHECKBOX_ON" or "IG_MAINMENU_OPTION_CHECKBOX_OFF")
-    end)
-    c.key = key
-    return c
-end
-
 -- What the grid lists on the current tab.
 local function listCat() return state.tab == "shiny" and "shiny" or state.cat end
 
@@ -383,23 +359,9 @@ local function build()
     f.ranking.frame:SetPoint("BOTTOMRIGHT", content, "BOTTOMRIGHT", -6, 40)
     f.board = ns.BoardView.build(f.ranking.body, raiseWindow)
 
-    f.sound = check(content, L.OPT_SOUND, "sound")
-    f.sound:SetPoint("BOTTOMLEFT", content, "BOTTOMLEFT", 14, 10)
-    f.announce = check(content, L.OPT_ANNOUNCE, "announce")
-    f.announce:SetPoint("LEFT", f.sound, "RIGHT", 80, 0)
-    f.share = check(content, L.OPT_SHARE, "share")
-    f.share:SetPoint("LEFT", f.announce, "RIGHT", 80, 0)
-    f.lure = check(content, L.OPT_LURE, "lureButton")
-    f.lure:SetPoint("LEFT", f.share, "RIGHT", 80, 0)
-    -- Double click to fish: right, left, off, one click each.
-    f.castMode = button(content, 160, 22, "", function()
-        ns.DoubleCast.cycle()
-        Window.refreshChecks()
-    end)
-    f.soundsButton = button(content, 110, 22, L.SOUNDS_BUTTON, function() ns.SoundPicker.toggle() end)
-    f.soundsButton:SetPoint("BOTTOMRIGHT", content, "BOTTOMRIGHT", -12, 10)
-    -- Left of "Sounds...": anchored on it, it can never run over it (seen in game 2026-11-01).
-    f.castMode:SetPoint("RIGHT", f.soundsButton, "LEFT", -6, 0)
+    -- Every option is in the Options window (2026-11-05).
+    f.optionsButton = button(content, 110, 22, L.OPTIONS_BUTTON, function() ns.Options.toggle() end)
+    f.optionsButton:SetPoint("BOTTOMRIGHT", content, "BOTTOMRIGHT", -12, 10)
 
     buildTabs()
 end
@@ -611,16 +573,10 @@ function Window.refresh()
     showDetail(entries)
 end
 
--- The bottom row: labels in the addon's language, boxes as saved.
+-- The bottom row: the Options button in the addon's language.
 function Window.refreshChecks()
-    local s = ns.Main.db.settings
-    f.soundsButton:SetText(L.SOUNDS_BUTTON)
-    f.castMode:SetText(L["DOUBLE_" .. ns.DoubleCast.mode()])
-    for _, c in ipairs({ { f.sound, L.OPT_SOUND }, { f.announce, L.OPT_ANNOUNCE }, { f.share, L.OPT_SHARE },
-        { f.lure, L.OPT_LURE } }) do
-        if type(c[1].Text) == "table" then c[1].Text:SetText(c[2]) end
-        c[1]:SetChecked(s[c[1].key])
-    end
+    f.optionsButton:SetText(L.OPTIONS_BUTTON)
+    if ns.Options then ns.Options.refresh() end
 end
 
 -- Item names arrive in bursts (GET_ITEM_INFO_RECEIVED): repaint once, a moment later.

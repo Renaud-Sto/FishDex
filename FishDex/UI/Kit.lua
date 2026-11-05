@@ -84,6 +84,70 @@ function Kit.frame(kind, parent, template, fallback, name)
     return fr
 end
 
+-- UICheckButtonTemplate with its label on the right (clickable too), the game's click
+-- sounds; onClick(on) gets the new state.
+function Kit.check(parent, text, onClick, raise)
+    local c = CreateFrame("CheckButton", nil, nil, "UICheckButtonTemplate")
+    c:SetParent(parent)
+    c:SetSize(24, 24)
+    if type(c.Text) == "table" then
+        c.Text:SetFontObject("GameFontHighlightSmall")
+        c.Text:SetText(text)
+        c.Text:ClearAllPoints()
+        c.Text:SetPoint("LEFT", c, "RIGHT", 2, 1)
+        c:SetHitRectInsets(0, -190, 0, 0)
+    end
+    c:SetScript("OnClick", function(self)
+        local on = self:GetChecked() and true or false
+        if type(PlaySound) == "function" and type(SOUNDKIT) == "table" then
+            local key = on and "IG_MAINMENU_OPTION_CHECKBOX_ON" or "IG_MAINMENU_OPTION_CHECKBOX_OFF"
+            if SOUNDKIT[key] then pcall(PlaySound, SOUNDKIT[key]) end
+        end
+        onClick(on)
+    end)
+    if raise then c:HookScript("OnMouseDown", raise) end
+    return c
+end
+
+-- The game options' slider (MinimalSliderWithSteppersTemplate: bar, arrows, value on the
+-- right), from min to max in `steps` steps; onChange(value) on every move. `format(value)`
+-- writes the value. Returns the frame; Kit.setSlider moves it without calling onChange.
+function Kit.slider(parent, width, min, max, steps, format, onChange)
+    local ok, s = pcall(CreateFrame, "Frame", nil, nil, "MinimalSliderWithSteppersTemplate")
+    if not ok or not s then s = CreateFrame("Frame") end
+    s:SetParent(parent)
+    s:SetSize(width, 24)
+    s.format, s.range = format, { min, max, steps }
+    local mixin = type(MinimalSliderWithSteppersMixin) == "table" and MinimalSliderWithSteppersMixin
+    s.native = type(s.Init) == "function" and type(s.RegisterCallback) == "function" and mixin
+        and type(mixin.Event) == "table" and type(mixin.Label) == "table"
+    if s.native then
+        s.formatters = { [mixin.Label.Right] = format }
+        s:Init(min, min, max, steps, s.formatters)
+        s:RegisterCallback(mixin.Event.OnValueChanged, function(_, value)
+            if not s.quiet then onChange(value) end
+        end, s)
+    else
+        s.value = s:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        s.value:SetPoint("LEFT", s, "RIGHT", 6, 0)
+    end
+    return s
+end
+
+function Kit.setSlider(s, value)
+    if s.native then
+        s.quiet = true
+        s:Init(value, s.range[1], s.range[2], s.range[3], s.formatters)
+        s.quiet = false
+    else
+        s.value:SetText(s.format(value))
+    end
+end
+
+function Kit.enableSlider(s, on)
+    if s.native and type(s.SetEnabled) == "function" then s:SetEnabled(on) end
+end
+
 -- UIPanelButtonTemplate, nil parent then SetParent; the label stays inside the caps.
 -- `raise` (optional) brings the owning window to the front on press.
 function Kit.button(parent, w, h, text, onClick, raise)

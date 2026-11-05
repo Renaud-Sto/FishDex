@@ -98,14 +98,18 @@ local function find(T, test)
     for _, fr in ipairs(T.frames) do if test(fr) then return fr end end
 end
 
-H.test("the sound window plays a clicked sound and keeps it for the chosen announce", function()
+H.test("the Sounds tab plays a clicked sound and keeps it for the chosen announce", function()
     local T = boot()
     T.env.SlashCmdList.FISHDEX("")
-    local open = find(T, function(fr) return fr.text == T.ns.L.SOUNDS_BUTTON end)
+    local open = find(T, function(fr) return fr.text == T.ns.L.OPTIONS_BUTTON end)
     H.truthy(open)
     rawget(open, "scripts").OnClick(open)
-    local win = T.env.FishDexSoundsWindow
+    local win = T.env.FishDexOptionsWindow
     H.truthy(win and win:IsShown())
+    -- The Options window opens on its Fishing tab; the sounds are on the second one.
+    local tab = T.env.FishDexOptionsWindowTab2
+    H.eq(rawget(tab, "tab"), "sounds")
+    rawget(tab, "scripts").OnClick(tab)
     -- Choose the legendary announce, switch to all sounds, click one, use it.
     local legendary = find(T, function(fr) return rawget(fr, "target") == "legendary" end)
     rawget(legendary, "scripts").OnClick(legendary)

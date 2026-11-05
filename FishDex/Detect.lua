@@ -6,10 +6,8 @@ local _, ns = ...
 local Detect = {}
 ns.Detect = Detect
 
--- Fishing ranks (Classic ids; Retail 12.1.5 channels 131476, measured 2026-10-31). A loot window that opens
--- right after the player's own fishing channel ends is fishing loot even if
--- IsFishingLoot is missing on this client.
-local FISHING_SPELLS = { [7620] = true, [7731] = true, [7732] = true, [18248] = true, [131474] = true, [131476] = true }
+-- A loot window that opens right after the player's own fishing channel ends is fishing
+-- loot even if IsFishingLoot is missing on this client (fishing spells: Lures.lua).
 local CHANNEL_GRACE = 3 -- seconds between the end of the channel and the loot window
 
 Detect.lastFishingStop = nil
@@ -22,6 +20,10 @@ local function safe(fn, ...)
     if type(issecretvalue) == "function" and issecretvalue(a) then return nil end
     return a
 end
+
+function Detect.spellName(id) return safe(C_Spell and C_Spell.GetSpellName, id) end
+
+function Detect.isFishingSpell(id) return ns.Lures.isFishingSpell(id, Detect.spellName) end
 
 function Detect.isFishingLoot(now)
     if safe(IsFishingLoot) == true then return true end
@@ -90,6 +92,8 @@ function Detect.onEvent(event, a1, _, a3)
             if c.grade then ns.Announce.shiny(c.id, c.grade, c.newGrade) else ns.Announce.newCatch(c.id) end
         end
         if handled then
+            -- Read first, then taken: the auto loot option empties the window afterwards.
+            if ns.Session then ns.Session.onFishingLoot(a1) end
             ns.Main.refresh()
             if ns.Comm then ns.Comm.onCatch() end
         end
@@ -97,7 +101,7 @@ function Detect.onEvent(event, a1, _, a3)
         handled = false
         Detect.lastFishingStop = nil
     elseif event == "UNIT_SPELLCAST_CHANNEL_STOP" then
-        if a1 == "player" and FISHING_SPELLS[a3] then Detect.lastFishingStop = GetTime() end
+        if a1 == "player" and Detect.isFishingSpell(a3) then Detect.lastFishingStop = GetTime() end
     end
 end
 

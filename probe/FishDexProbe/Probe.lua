@@ -266,6 +266,77 @@ cmds.all = function()
         show(SOUNDKIT and SOUNDKIT.ACHIEVEMENT_MENU_OPEN), show(SOUNDKIT and SOUNDKIT.UI_70_ARTIFACT_FORGE_TRAIT_GOLDTRAIT))
 end
 
+-- /fdp dex: checks FishDex's whole static table against this client (2026-11-05, Forever
+-- launch). Items load asynchronously, so each answer is logged when it arrives; a missing
+-- id is logged as MISSING. Ids copied from FishDex/Data.lua, Lures.lua and Sounds.lua.
+local DEX_ITEMS = "6291 6303 6289 6317 6361 21071 6308 6522 6358 21153 6359 8365 6362 4603 13754"
+    .. " 13758 13759 13756 13755 13760 13889 13893 13888 13757 13422 13890 6299 6717 1467 19975"
+    .. " 16970 6292 6294 6295 6309 6310 6311 6363 6364 13901 13902 13903 13904 13905 13885 13886"
+    .. " 13882 13883 13884 13887 13876 13907 13908 6356 6351 6352 6353 6354 6355 6357 6307 13874"
+    .. " 13875 13918 20708 21113 21150 7973 8366 13881 13891 20709 21114 21151 3820 7070 7079 6297"
+    .. " 6304 6529 6530 6811 6532 7307 6533 34861 46006 62673 68049 6256 6365 6366 12225 19970"
+local DEX_ZONES = "1 8 10 11 12 14 15 16 17 28 33 36 38 40 41 44 45 47 85 130 139 141 148 215 267"
+    .. " 331 357 361 400 405 406 440 490 493 618 1377 1497 1519 1637 1638 1657"
+local DEX_SPELLS = "7751 7752 7753 7754 7755 7827 7828 7836 7837 8238 8240 17551 18238 18239 18240"
+    .. " 18241 18242 18243 18244 18245 18246 18247 20916 25704 25954 131474 131476 18248 7732 7731 7620"
+
+local function itemAnswer(id)
+    local exists = try(C_Item and C_Item.DoesItemExistByID, id)
+    if exists ~= "true" then logLine("dex item " .. id .. " MISSING (" .. exists .. ")") return end
+    if type(Item) ~= "table" or type(Item.CreateFromItemID) ~= "function" then
+        logLine("dex item " .. id .. " " .. itemLine("item:" .. id)) return
+    end
+    local ok, item = pcall(Item.CreateFromItemID, Item, id)
+    if not ok or type(item) ~= "table" then logLine("dex item " .. id .. " ERR " .. show(item)) return end
+    item:ContinueOnItemLoad(function() logLine("dex item " .. id .. " " .. itemLine("item:" .. id)) end)
+end
+
+cmds.dex = function()
+    local n = 0
+    for id in DEX_ITEMS:gmatch("%d+") do n = n + 1 itemAnswer(tonumber(id)) end
+    for id in DEX_ZONES:gmatch("%d+") do logLine("dex area " .. id .. " " .. try(C_Map and C_Map.GetAreaInfo, tonumber(id))) end
+    for id in DEX_SPELLS:gmatch("%d+") do
+        local s = tonumber(id)
+        logLine("dex spell " .. id .. " " .. try(C_Spell and C_Spell.GetSpellName, s)
+            .. " known=" .. try(IsPlayerSpell, s))
+    end
+    out(n, "items asked; wait 5 s then /reload, the answers are in the log")
+end
+
+-- /fdp sndcheck: plays the 4 default sound files of Sounds.lua, 3 s apart, between two
+-- controls (file id 1 = surely missing, SOUNDKIT.READY_CHECK = surely present), and logs
+-- what PlaySoundFile returns and whether C_Sound.IsPlaying still sees it 0.3 s later. If
+-- the missing control looks like the present one, this check proves nothing.
+local SND = { { "control-missing", 1 }, { "new", 1067169 }, { "rare", 569143 },
+    { "epic", 1489461 }, { "legendary", 775180 }, { "control-soundkit", "READY_CHECK" } }
+cmds.sndcheck = function()
+    for i, s in ipairs(SND) do
+        C_Timer.After((i - 1) * 3, function()
+            local ok, willPlay, handle
+            if type(s[2]) == "number" then
+                ok, willPlay, handle = pcall(PlaySoundFile, s[2], "Master")
+            else
+                ok, willPlay, handle = pcall(PlaySound, SOUNDKIT and SOUNDKIT[s[2]], "Master")
+            end
+            out("snd", s[1], show(s[2]), "ok", show(ok), "willPlay", show(willPlay), "handle", show(handle))
+            C_Timer.After(0.3, function()
+                logLine("snd " .. s[1] .. " playing@0.3s=" .. try(C_Sound and C_Sound.IsPlaying, handle))
+            end)
+        end)
+    end
+end
+
+-- /fdp cvars: the game settings FishDex's fishing options change, as this client has them
+-- (nil: the client lacks it, FishDex then leaves it alone).
+cmds.cvars = function()
+    local get = C_CVar and C_CVar.GetCVar or GetCVar
+    for _, name in ipairs({ "UnitNameNPC", "UnitNameFriendlySpecialNPCName", "UnitNameInteractiveNPC",
+        "UnitNameNonCombatCreatureName", "UnitNameHostleNPC", "nameplateShowFriendlyNPCs", "Sound_SFXVolume",
+        "Sound_MusicVolume", "Sound_AmbienceVolume", "autoLootDefault" }) do
+        out("cvar", name, try(get, name))
+    end
+end
+
 SLASH_FISHDEXPROBE1 = "/fdp"
 SlashCmdList.FISHDEXPROBE = function(msg)
     local cmd, arg = (msg or ""):match("^(%S*)%s*(.-)$")
@@ -279,7 +350,7 @@ SlashCmdList.FISHDEXPROBE = function(msg)
         cmds[cmd](arg)
     else
         out("commands: client | api <path...> | atlas <name...> | file <path>"
-            .. " | template <Type> <Template> | item <id...> | area <id...> | spell <id...> | all | sounds [word] | sound [n] | watch on|off | log | clear")
+            .. " | template <Type> <Template> | item <id...> | area <id...> | spell <id...> | all | dex | sndcheck | cvars | sounds [word] | sound [n] | watch on|off | log | clear")
     end
 end
 out("loaded. /fdp for commands. Lua errors on screen: /console scriptErrors 1")

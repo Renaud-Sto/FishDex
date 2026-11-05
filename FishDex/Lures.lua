@@ -67,6 +67,20 @@ function Lures.ordered(list, chosen)
     return first and out or {}
 end
 
+-- Spell ids a fishing channel has been seen with; the Retail ones do not exist on Forever
+-- (measured 2026-11-05, build 70790), where the cast id is not measured yet.
+Lures.CHANNEL_SPELLS = { [7620] = true, [7731] = true, [7732] = true, [18248] = true, [131474] = true,
+    [131476] = true }
+
+-- A fishing channel: a known id, or a spell named like Fishing in this client's language
+-- (`nameOf(spellID)` gives the name), so a new Forever rank still counts.
+function Lures.isFishingSpell(id, nameOf)
+    if type(id) ~= "number" then return false end
+    if Lures.CHANNEL_SPELLS[id] then return true end
+    local fishing = nameOf and nameOf(7620)
+    return type(fishing) == "string" and fishing ~= "" and nameOf(id) == fishing
+end
+
 -- The first fishing spell `knows(spellID)` answers true for, or nil.
 function Lures.fishingSpell(knows)
     for _, id in ipairs(Lures.FISHING_SPELLS) do

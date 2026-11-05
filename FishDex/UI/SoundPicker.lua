@@ -1,6 +1,6 @@
--- Sound window: pick, by ear, the game sound of a first catch and of each shiny grade.
--- A click on a sound plays it; "Use this sound" keeps it for the chosen announce.
--- Opens beside the dex window; built on first open, like it.
+-- Sounds tab of the Options window (UI/Options.lua): pick, by ear, the game sound of a
+-- first catch and of each shiny grade. A click on a sound plays it; "Use this sound"
+-- keeps it for the chosen announce. Built into the tab's frame on the window's first open.
 local _, ns = ...
 
 local SoundPicker = {}
@@ -8,9 +8,9 @@ ns.SoundPicker = SoundPicker
 
 local L, Kit, Sounds = ns.L, ns.Kit, ns.Sounds
 
-local WIDTH, HEIGHT = 440, 496
+local WIDTH = 440
 local ROWS, ROW_H = 15, 20
-local p -- the window, nil until first open
+local p -- the tab's frame, nil until the window's first open
 local state = { target = "new", mode = "selection", keys = {}, offset = 0, picked = nil }
 local rows, targets, modes = {}, {}, {}
 
@@ -27,47 +27,16 @@ local function relist()
     state.offset = 0
 end
 
-local function raise() if p then p:Raise() end end
+local function raise() ns.Options.raise() end
 
 local function targetRGB(target)
     local g = ns.Shiny.grade(target)
     return g and g.color or Kit.GOLD
 end
 
-local function build()
-    p = CreateFrame("Frame", "FishDexSoundsWindow", nil, "ButtonFrameTemplate")
-    p:SetParent(UIParent)
-    p:Hide()
-    p:SetSize(WIDTH, HEIGHT)
-    p:SetFrameStrata("HIGH")
-    if type(p.SetToplevel) == "function" then p:SetToplevel(true) end
-    p:HookScript("OnShow", function(self) self:Raise() end)
-    p:HookScript("OnMouseDown", function(self) self:Raise() end)
-    p:SetClampedToScreen(true)
-    p:SetMovable(true)
-    p:EnableMouse(true)
-    p:RegisterForDrag("LeftButton")
-    if type(ButtonFrameTemplate_HideAttic) == "function" then ButtonFrameTemplate_HideAttic(p) end
-    if type(ButtonFrameTemplate_HidePortrait) == "function" then ButtonFrameTemplate_HidePortrait(p) end
-    if type(ButtonFrameTemplate_HideButtonBar) == "function" then ButtonFrameTemplate_HideButtonBar(p) end
-    p:SetScript("OnDragStart", p.StartMoving)
-    p:SetScript("OnDragStop", function(self)
-        self:StopMovingOrSizing()
-        local left, top = self:GetLeft(), self:GetTop()
-        if left and top then
-            self:ClearAllPoints()
-            self:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", left, top)
-        end
-    end)
-    -- Beside the dex window, at an absolute position (never anchored to it).
-    local main = ns.Window.frame()
-    local right, top = main and main:GetRight(), main and main:GetTop()
-    if type(right) == "number" and type(top) == "number" then
-        p:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", right + 4, top)
-    else
-        p:SetPoint("CENTER", UIParent, "CENTER", 300, 40)
-    end
-    table.insert(UISpecialFrames, "FishDexSoundsWindow")
+-- Fills `parent` (the tab, the size of the window; offsets count from its top left).
+function SoundPicker.build(parent)
+    p = parent
 
     -- Which announce is being set: a segmented row, the chosen one locked highlighted.
     local w = math.floor((WIDTH - 28 - 3 * 4) / 4)
@@ -179,7 +148,6 @@ end
 
 function SoundPicker.refresh()
     if not p or not p:IsShown() then return end
-    if type(p.SetTitle) == "function" then p:SetTitle(L.TITLE .. " - " .. L.SOUNDS_TITLE) end
     for _, b in ipairs(targets) do
         b:SetText(L["TARGET_" .. b.target])
         if b.target == state.target then b:LockHighlight() else b:UnlockHighlight() end
@@ -216,15 +184,3 @@ function SoundPicker.refresh()
     p.reset:SetText(L.SOUND_RESET)
     p.reset:SetEnabled(chosen)
 end
-
-function SoundPicker.toggle()
-    if not p then build() end
-    if p:IsShown() then
-        p:Hide()
-    else
-        p:Show()
-        SoundPicker.refresh()
-    end
-end
-
-function SoundPicker.isShown() return p ~= nil and p:IsShown() end

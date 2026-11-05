@@ -26,7 +26,13 @@ Dex.DEFAULTS = {
         -- lureButton: the lure button while a pole is equipped; lure.id = the lure it offers
         -- (0: the best in the bags), lure.x/y its place; doubleCast: RightButton, LeftButton
         -- or off.
-        lureButton = true, lure = { id = 0 }, doubleCast = "RightButton" },
+        lureButton = true, lure = { id = 0 }, doubleCast = "RightButton",
+        -- The fishing options (Options window, 2026-11-05): castButton = the button the
+        -- double click uses when it is on, castDelay its window in seconds; loudVolume 0..1.
+        castButton = "RightButton", castDelay = 0.4, castMounted = false, recast = false,
+        autoLoot = false, hideNames = false, loudSounds = false, loudVolume = 1 },
+    -- saved[cvar] = { was, now }: game settings changed while fishing (Fishing.lua).
+    fishing = { saved = {} },
 }
 
 local byID = {}
@@ -57,6 +63,10 @@ function Dex.repair(db)
     end
     db.version = Dex.DEFAULTS.version
     fill(db, Dex.DEFAULTS)
+    local s = db.settings
+    s.castDelay = math.max(0.2, math.min(0.8, s.castDelay))
+    s.loudVolume = math.max(0, math.min(1, s.loudVolume))
+    if s.castButton ~= "LeftButton" then s.castButton = "RightButton" end
     for id, byGrade in pairs(db.shiny) do
         if type(id) ~= "number" or type(byGrade) ~= "table" then db.shiny[id] = nil end
     end
