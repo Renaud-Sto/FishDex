@@ -9,6 +9,7 @@
 ## SavedVariables: FishDexDB
 ## X-Website: https://github.com/Renaud-Sto/FishDex
 ## X-License: MIT
+## X-Curse-Project-ID: 1784966
 
 Locale.lua
 Data.lua

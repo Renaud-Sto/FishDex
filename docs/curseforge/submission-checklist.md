@@ -17,4 +17,6 @@
 Not shipped in the zip: the probe, tests, tools, docs. Hidden test commands stay in the addon
 (`/fishdex shinytest`, `/fishdex testcanne`); a forced shiny never counts in the guild ranking.
 
-After the first upload: add `## X-Curse-Project-ID: <id>` to the TOC.
+CurseForge project id 1784966 (in the TOC). Releases: push a tag `vX.Y.Z` matching the TOC
+version; `.github/workflows/release.yml` runs the tests, builds the zip, makes the GitHub release
+and uploads to CurseForge (`tools/release_curseforge.py`, secret `CF_API_KEY`).
