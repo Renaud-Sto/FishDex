@@ -10,6 +10,7 @@ English client, no chat, no other windows, character names cropped where possibl
 | 03-options.png | Options window, Fishing tab | Fishing options |
 | 04-sounds.png | Options window, Sounds tab | Pick the sound of each announce |
 | 05-wrecks.png | Wrecks tab, nothing caught yet | Wrecks, trophies and items to find |
+| 06-lure.png | The lure button beside the player frame | Lure button |
 
 Taken by renaud on Forever 1.60.1.70790 (enUS), 2026-11-05. Still to take later: the first catch
-announce, a shiny, the lure button.
+announce, a shiny, the lure button with its hover list open.
