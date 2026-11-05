@@ -27,7 +27,7 @@ WoW Forever (Interface 16001), tested on build 1.60.1.70790. English and French.
 **Good to know**
 
 - Only catches made after installing FishDex count.
-- The guild ranking needs guild mates who also use FishDex, and has not been tested between two players yet.
+- The guild ranking needs guild mates who also use FishDex.
 - The fishing zones come from Classic data: Forever may place some fish elsewhere. A catch always counts, wherever it happens.
 - Shinies are rolled by the addon on your computer: they are for fun, not proof.
 - If you used Better Fishing, turn it off: two double-click casters get in each other's way.

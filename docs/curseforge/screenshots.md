@@ -5,10 +5,11 @@ English client, no chat, no other windows, character names cropped where possibl
 
 | File | Shows | Title |
 | --- | --- | --- |
-| 01-collection.png | Collection tab with several fish caught, one selected (zones and recipes) | Your fishing collection |
-| 02-first-catch.png | The announce of a new catch in the middle of the screen | First catch announce |
-| 03-shiny.png | Shiny tab, a shiny fish selected (or the coloured announce) | Shiny catches |
-| 04-trophies.png | Trophies or Wrecks tab | Trophies, wrecks and chests |
-| 05-guild.png | Guild tab with at least two lines | Guild ranking |
-| 06-options.png | Options window, Fishing tab | Fishing options |
-| 07-lure.png | The lure button next to the action bars, its hover list open | Lure button |
+| 01-collection.png | Collection tab, a caught fish selected (zones, recipe) | Your fishing collection |
+| 02-guild.png | Guild tab with two anglers | Guild ranking |
+| 03-options.png | Options window, Fishing tab | Fishing options |
+| 04-sounds.png | Options window, Sounds tab | Pick the sound of each announce |
+| 05-wrecks.png | Wrecks tab, nothing caught yet | Wrecks, trophies and items to find |
+
+Taken by renaud on Forever 1.60.1.70790 (enUS), 2026-11-05. Still to take later: the first catch
+announce, a shiny, the lure button.

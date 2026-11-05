@@ -8,5 +8,4 @@ New
 - Options window with a Sounds tab; minimap button; English and French.
 
 Known limitations
-- The guild ranking has not been tested between two players yet.
 - Fishing zones come from Classic data; a catch counts wherever it happens.
