@@ -3,7 +3,7 @@
 | Item | Value | Status |
 | --- | --- | --- |
 | Name | FishDex | check that the name is free on CurseForge |
-| Summary | A fishing collection for WoW Forever: every fish, trophy and wreck you can fish, filled as you catch them. | ready |
+| Summary | A fishing collection for WoW Forever: every fish, trophy and wreck you can fish, filled as you catch them, with shiny catches and a guild ranking. | ready |
 | Description | `description.md` (paste as is) | ready |
 | Changelog | `changelog-1.0.0.md` | ready |
 | File | `dist/FishDex-1.0.0.zip` (`python tools/build_zip.py`, one top folder `FishDex/`) | built locally |
