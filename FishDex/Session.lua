@@ -1,5 +1,5 @@
 -- Game adapter of the fishing options (renaud, 2026-11-05): a fishing session starts with
--- the player's fishing cast and ends Fishing.IDLE seconds after the last cast or catch.
+-- the player's fishing cast and ends Fishing.IDLE seconds (10, renaud 2026-11-05) after the last cast or catch.
 -- While it lasts, the "hide names" and "louder sounds" options change game settings
 -- (Fishing.lua decides which); they go back at its end, at logout, and at the next login
 -- after a crash (the saved values live in FishDexDB.fishing.saved). The auto loot option
@@ -66,7 +66,7 @@ function Session.touch()
     last = GetTime()
     if starting then
         Session.apply()
-        ticker = C_Timer.NewTicker(5, function()
+        ticker = C_Timer.NewTicker(1, function()
             if not Session.active() then stop() end
         end)
     end

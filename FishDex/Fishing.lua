@@ -7,7 +7,7 @@ local Fishing = {}
 ns.Fishing = Fishing
 
 -- A fishing session ends this many seconds after the last cast or catch.
-Fishing.IDLE = 20
+Fishing.IDLE = 10
 
 -- Friendly NPC names and nameplates off; hostile ones are left as the player set them.
 Fishing.NAME_CVARS = {

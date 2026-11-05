@@ -100,7 +100,7 @@ end
 
 local CV = { UnitNameNPC = "1", UnitNameFriendlySpecialNPCName = "1", UnitNameInteractiveNPC = "1",
     UnitNameNonCombatCreatureName = "1", nameplateShowFriendlyNPCs = "1" }
-H.test("names are hidden from the cast to 20 s after the last catch, even through a long cast", function()
+H.test("names are hidden from the cast to 10 s after the last catch, even through a long cast", function()
     local T = boot(copy(CV))
     T.env.FishDexDB.settings.hideNames = true
     T.fire("UNIT_SPELLCAST_CHANNEL_START", "player", "guid", 7620)
@@ -109,9 +109,9 @@ H.test("names are hidden from the cast to 20 s after the last catch, even throug
     T.tick(25) -- the bobber is still out
     H.eq(T.cv.UnitNameNPC, "0")
     T.fire("UNIT_SPELLCAST_CHANNEL_STOP", "player", "guid", 7620)
-    T.tick(15)
+    T.tick(8)
     H.eq(T.cv.UnitNameNPC, "0")
-    T.tick(10)
+    T.tick(5)
     H.eq(T.cv, CV)
     H.eq(T.env.FishDexDB.fishing.saved, {})
 end)
