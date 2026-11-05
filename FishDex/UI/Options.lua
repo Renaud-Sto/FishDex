@@ -234,4 +234,6 @@ function Options.toggle()
     end
 end
 
+function Options.hide() if p then p:Hide() end end
+
 function Options.isShown() return p ~= nil and p:IsShown() end

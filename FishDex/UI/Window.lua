@@ -244,6 +244,8 @@ local function build()
         f:SetPoint("CENTER", UIParent, "CENTER", 0, 40)
     end
     f:HookScript("OnShow", function() Window.refresh() end)
+    -- The Options window belongs to this one: it closes with it (renaud, 2026-11-05).
+    f:HookScript("OnHide", function() if ns.Options then ns.Options.hide() end end)
     table.insert(UISpecialFrames, "FishDexWindow")
 
     -- Background: the Collections tile (an inset sharing the window's level); content one

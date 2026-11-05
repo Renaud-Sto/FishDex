@@ -224,6 +224,14 @@ H.test("the Options window's boxes save every option, the double click keeps its
     H.falsy(box("recast"):IsEnabled())
     click(box("doubleCast"), true)
     H.eq(s.doubleCast, "LeftButton")
+    -- closing the dex window closes the Options window too
+    T.env.SlashCmdList.FISHDEX("")
+    T.env.SlashCmdList.FISHDEX("")
+    local dex = T.env.FishDexWindow
+    H.falsy(dex:IsShown())
+    rawget(dex, "scripts").OnHide(dex) -- the fake env does not run OnHide by itself
+    H.falsy(T.env.FishDexOptionsWindow:IsShown())
+    T.ns.Options.toggle()
     -- hide names turned on while fishing changes the game at once
     T.fire("UNIT_SPELLCAST_CHANNEL_START", "player", "guid", 7620)
     click(box("hideNames"), true)
