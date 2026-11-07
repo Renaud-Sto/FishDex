@@ -19,6 +19,9 @@ def main():
     media = os.path.join(ADDON, "Media")
     if os.path.isdir(media):
         files += sorted("Media/" + n for n in os.listdir(media))
+    # The Key Bindings file the client reads by itself (the fishing key).
+    if os.path.isfile(os.path.join(ADDON, "Bindings.xml")):
+        files.append("Bindings.xml")
     version = [line.split(":", 1)[1].strip() for line in toc if line.startswith("## Version")][0]
 
     os.makedirs("dist", exist_ok=True)

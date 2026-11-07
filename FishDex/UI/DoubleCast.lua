@@ -1,12 +1,18 @@
 -- Double click to fish (renaud, 2026-11-01): with a fishing pole equipped, outside combat
 -- and not mounted, a double click on the world (right or left button, or off) casts
--- Fishing. Options (2026-11-05): the double click's window (castDelay), allowed while
--- mounted (castMounted), and while the bobber is out (recast; off, a double click on a
--- bobber that has not bitten does not cast again). Casting is protected, so it goes through a secure button: on the second press
+-- Fishing. Option (2026-11-05): the double click's window (castDelay). Never while mounted
+-- (a cast dismounts) and never again while the bobber is out (a lost fish): renaud dropped
+-- both options on 2026-11-07. Casting is protected, so it goes through a secure button: on the second press
 -- the mouse button is bound for a moment to that button (an override binding, the way
 -- fishing addons do it), its release casts, and the binding is cleared right after.
 -- The press is seen with a hook on WorldFrame's OnMouseDown (HookScript keeps the game's
 -- own handler), so a click on a window never counts.
+-- Reel in (renaud, 2026-11-07): while the bobber is in the Interact Key's reach
+-- (UI/FishKeyButton.lua), the same double click reels it in, no aiming. The game's
+-- INTERACTTARGET acts on the press, so the binding is set once the first press is
+-- released (never while the button is held: a held right button turns the camera, and its
+-- release must reach the binding that started it) and lasts the rest of the double click's
+-- window: the second press is then the Interact Key.
 local _, ns = ...
 
 local DoubleCast = {}
@@ -22,6 +28,8 @@ local BINDING = { RightButton = "BUTTON2", LeftButton = "BUTTON1" }
 local cast, owner
 local lastTime, lastButton = nil, nil
 local armed = false
+local waiting -- the ticker waiting for the first press's release, reeling in
+DoubleCast.POLL = 0.02 -- seconds between checks of the held button
 
 local function safe(fn, ...)
     if type(fn) ~= "function" then return nil end
@@ -77,6 +85,11 @@ local function clear()
     safe(ClearOverrideBindings, owner)
 end
 
+local function stopWaiting()
+    if waiting then waiting:Cancel() end
+    waiting = nil
+end
+
 local function create()
     -- Nil parent then SetParent (taint rule of the native UI notes). A 1 px button with
     -- nothing drawn: only the binding clicks it.
@@ -103,8 +116,13 @@ function DoubleCast.onWorldDown(button)
         return
     end
     local s = ns.Main.db.settings
-    if inCombat() or (safe(IsMounted) == true and not s.castMounted) or not ns.LureButton.poleEquipped()
-        or (not s.recast and bobberOut()) then
+    if not inCombat() and bobberOut() and ns.LureButton.poleEquipped() and ns.FishKeyButton
+        and ns.FishKeyButton.bobberInReach() then
+        lastTime = nil
+        DoubleCast.armReel(button, s.castDelay or Lures.DOUBLE_CLICK)
+        return
+    end
+    if inCombat() or safe(IsMounted) == true or not ns.LureButton.poleEquipped() or bobberOut() then
         lastTime = nil
         return
     end
@@ -121,6 +139,26 @@ function DoubleCast.onWorldDown(button)
     safe(SetOverrideBindingClick, owner, true, BINDING[button], DoubleCast.NAME)
     armed = true
     C_Timer.After(DoubleCast.SAFETY, clear)
+end
+
+-- The first press of a double click on the world, the bobber in reach: once it is released
+-- within `window` seconds, the button is the Interact Key until the window ends.
+function DoubleCast.armReel(button, window)
+    if armed or waiting then return end
+    local start = GetTime()
+    waiting = C_Timer.NewTicker(DoubleCast.POLL, function()
+        local left = start + window - GetTime()
+        if left <= 0 or inCombat() then
+            stopWaiting()
+            return
+        end
+        if safe(IsMouseButtonDown, button) == true then return end
+        stopWaiting()
+        if not cast then create() end
+        safe(SetOverrideBinding, owner, true, BINDING[button], "INTERACTTARGET")
+        armed = true
+        C_Timer.After(left, clear)
+    end)
 end
 
 if type(WorldFrame) == "table" and type(WorldFrame.HookScript) == "function" then

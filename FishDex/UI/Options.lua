@@ -1,7 +1,7 @@
 -- The Options window (renaud, 2026-11-05; was the Sounds window): two tabs under it.
 -- "Fishing": every on/off option of FishDex, the old bottom row of the dex window and the
 -- fishing options that replace Better Fishing (auto loot, hidden names, louder sounds,
--- double click with its delay, while mounted, recast). "Sounds": the sound picker
+-- double click with its delay and button, the Interact Key, the fishing key). "Sounds": the sound picker
 -- (UI/SoundPicker.lua). Opens beside the dex window; built on first open, like it.
 local _, ns = ...
 
@@ -10,7 +10,7 @@ ns.Options = Options
 
 local L, Kit = ns.L, ns.Kit
 
-local WIDTH, HEIGHT = 440, 496
+local WIDTH, HEIGHT = 440, 474
 local TABS = { "fishing", "sounds" }
 local ROW = 27
 
@@ -36,7 +36,25 @@ local AFTER = {
     lureButton = function() ns.LureButton.update() end,
     hideNames = function() ns.Session.apply() end,
     loudSounds = function() ns.Session.apply() end,
+    useInteractKey = function()
+        ns.FishKeyButton.apply()
+        ns.Session.apply()
+    end,
 }
+
+-- The game's tooltip on a row: its label in white, then OPT_TIP_<key> when there is one.
+local function tooltip(frame, key)
+    frame:HookScript("OnEnter", function(self)
+        local tip = L["OPT_TIP_" .. key]
+        if type(GameTooltip) ~= "table" or type(tip) ~= "string" then return end
+        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+        local title = rawget(self, "key") and type(self.Text) == "table" and self.Text:GetText() or L.OPT_FISHKEY
+        GameTooltip:AddLine(title, 1, 1, 1)
+        GameTooltip:AddLine(tip, nil, nil, nil, true)
+        GameTooltip:Show()
+    end)
+    frame:HookScript("OnLeave", function() if type(GameTooltip) == "table" then GameTooltip:Hide() end end)
+end
 
 -- One option row: the box, its label, and `x` the indent.
 local function addCheck(page, key, y, x)
@@ -53,6 +71,7 @@ local function addCheck(page, key, y, x)
     c:SetPoint("TOPLEFT", page, "TOPLEFT", 16 + (x or 0), y)
     c.key = key
     checks[#checks + 1] = c
+    tooltip(c, key)
     return c
 end
 
@@ -83,7 +102,15 @@ local function buildFishing(page)
         ns.Session.apply()
     end)
     page.volume:SetPoint("TOPRIGHT", page, "TOPRIGHT", -54, y)
-    y = y - ROW
+    y = y - ROW - 8
+    -- Cast and reel in: how it works first, then the double click and the fishing key.
+    page.castHeader = header(page, y)
+    y = y - 20
+    page.castHelp = page:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+    page.castHelp:SetPoint("TOPLEFT", page, "TOPLEFT", 20, y)
+    page.castHelp:SetWidth(WIDTH - 60)
+    page.castHelp:SetJustifyH("LEFT")
+    y = y - 30
     page.cast = addCheck(page, "doubleCast", y)
     page.delay = Kit.slider(page, 150, 0.2, 0.8, 12, seconds, function(v)
         settings().castDelay = v
@@ -98,10 +125,67 @@ local function buildFishing(page)
     page.button:SetPoint("TOPRIGHT", page, "TOPRIGHT", -54, y)
     page.buttonLabel = page:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     page.buttonLabel:SetPoint("TOPLEFT", page, "TOPLEFT", 46, y - 5)
+    y = y - ROW - 6
+    addCheck(page, "useInteractKey", y)
     y = y - ROW
-    addCheck(page, "castMounted", y, 24)
-    y = y - ROW
-    addCheck(page, "recast", y, 24)
+    -- The fishing key (UI/FishKeyButton.lua): click, then press a key; right click clears.
+    -- It is saved in the game's own Key Bindings, where it shows under FishDex too.
+    page.fishKeyLabel = page:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    page.fishKeyLabel:SetPoint("TOPLEFT", page, "TOPLEFT", 46, y - 5)
+    page.fishKey = Kit.button(page, 150, 22, "", function(_, button)
+        if button == "RightButton" then
+            Options.stopCapture()
+            if not ns.FishKeyButton.unbind() then ns.Main.say(L.FISHKEY_COMBAT) end
+            Options.refresh()
+        else
+            Options.startCapture()
+        end
+    end, Options.raise)
+    page.fishKey:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+    page.fishKey:SetPoint("TOPRIGHT", page, "TOPRIGHT", -54, y)
+    tooltip(page.fishKey, "fishKey")
+    page.fishKey:SetScript("OnKeyDown", function(_, key) Options.capturePress(key) end)
+    page.fishKey:HookScript("OnMouseDown", function(_, button)
+        if state.capturing and ns.FishKey.MOUSE[button] then Options.capturePress(ns.FishKey.MOUSE[button]) end
+    end)
+    page.fishKey:HookScript("OnHide", function() Options.stopCapture() end)
+end
+
+-- Waiting for the fishing key: the button takes the keyboard until a key or Escape.
+function Options.startCapture()
+    if not p then return end
+    state.capturing = true
+    local b = p.fishKeyButton
+    b:EnableKeyboard(true)
+    if type(b.SetPropagateKeyboardInput) == "function" then pcall(b.SetPropagateKeyboardInput, b, false) end
+    Options.refresh()
+end
+
+function Options.stopCapture()
+    if not state.capturing then return end
+    state.capturing = false
+    if p then p.fishKeyButton:EnableKeyboard(false) end
+    Options.refresh()
+end
+
+function Options.capturePress(key)
+    if not state.capturing then return end
+    if key == "ESCAPE" then
+        Options.stopCapture()
+        return
+    end
+    local chord = ns.FishKey.chord(key, { alt = IsAltKeyDown and IsAltKeyDown(), ctrl = IsControlKeyDown
+        and IsControlKeyDown(), shift = IsShiftKeyDown and IsShiftKeyDown() })
+    if not chord then return end -- a lone modifier: wait for the key
+    Options.stopCapture()
+    local ok, before = ns.FishKeyButton.bind(chord)
+    if not ok then
+        ns.Main.say(L.FISHKEY_COMBAT)
+    elseif before then
+        local name = _G["BINDING_NAME_" .. before]
+        ns.Main.say(string.format(L.FISHKEY_REPLACED, chord, type(name) == "string" and name or before))
+    end
+    Options.refresh()
 end
 
 local function showTab(key)
@@ -178,6 +262,7 @@ local function build()
         pages[key] = page
     end
     buildFishing(pages.fishing)
+    p.fishKeyButton = pages.fishing.fishKey
     ns.SoundPicker.build(pages.sounds)
     buildTabs()
     p:HookScript("OnShow", function() showTab(state.tab) end)
@@ -207,14 +292,12 @@ function Options.refresh()
     local s, page = settings(), pages.fishing
     page.general:SetText(L.OPTIONS_GENERAL)
     page.fishing:SetText(L.OPTIONS_FISHING)
+    page.castHeader:SetText(L.OPTIONS_CAST)
+    page.castHelp:SetText(L.OPTIONS_CAST_HELP)
     local castOn = ns.DoubleCast.mode() ~= "off"
     for _, c in ipairs(checks) do
         if type(c.Text) == "table" then c.Text:SetText(L["OPT_LONG_" .. c.key]) end
         if c.key == "doubleCast" then c:SetChecked(castOn) else c:SetChecked(s[c.key]) end
-        if c.key == "castMounted" or c.key == "recast" then
-            c:SetEnabled(castOn)
-            if type(c.Text) == "table" then Kit.paint(c.Text, castOn and Kit.WHITE or Kit.GREY) end
-        end
     end
     Kit.setSlider(page.volume, s.loudVolume)
     Kit.enableSlider(page.volume, s.loudSounds)
@@ -222,6 +305,21 @@ function Options.refresh()
     Kit.enableSlider(page.delay, castOn)
     page.buttonLabel:SetText(L.OPT_CAST_BUTTON)
     page.button:SetText(L["CAST_" .. s.castButton])
+    local keys = ns.FishKeyButton.keys()
+    local shown = {}
+    for i, k in ipairs(keys) do shown[i] = type(GetBindingText) == "function" and GetBindingText(k) or k end
+    page.fishKeyLabel:SetText(state.capturing and L.OPT_FISHKEY_CANCEL or L.OPT_FISHKEY)
+    page.fishKey:SetText(state.capturing and L.OPT_FISHKEY_PRESS
+        or (#keys > 0 and table.concat(shown, ", ") or L.OPT_FISHKEY_NONE))
+    -- The Interact Key's box names the key it has now.
+    local interact = ns.FishKeyButton.interactKeys()
+    for i, k in ipairs(interact) do interact[i] = type(GetBindingText) == "function" and GetBindingText(k) or k end
+    for _, c in ipairs(checks) do
+        if c.key == "useInteractKey" and type(c.Text) == "table" then
+            c.Text:SetText(string.format(L.OPT_LONG_useInteractKey,
+                #interact > 0 and table.concat(interact, ", ") or L.OPT_INTERACT_NONE))
+        end
+    end
 end
 
 function Options.toggle()

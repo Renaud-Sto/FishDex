@@ -49,7 +49,8 @@ function Session.apply()
         return
     end
     pending = false
-    local wanted = Session.active() and Fishing.wanted(ns.Main.db.settings) or {}
+    local key = ns.FishKeyButton ~= nil and ns.FishKeyButton.active()
+    local wanted = Session.active() and Fishing.wanted(ns.Main.db.settings, key) or {}
     Fishing.apply(saved(), wanted, getCVar, setCVar)
 end
 

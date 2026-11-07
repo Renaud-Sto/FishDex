@@ -1,5 +1,5 @@
 -- The fishing options (2026-11-05, to replace Better Fishing): game settings changed while
--- fishing and put back, auto loot, the double click's delay / mounted / recast, the
+-- fishing and put back, auto loot, the double click's delay, the
 -- Options window.
 local H = ...
 local W = dofile("tests/fakewow.lua")
@@ -167,7 +167,7 @@ H.test("auto loot takes a fished window once, after FishDex read it, unless the 
     H.eq(T.looted, { 2, 1 })
 end)
 
-H.test("the double click follows its delay, the mounted and the recast options", function()
+H.test("the double click follows its delay, never mounted, never while the bobber is out", function()
     local T = boot()
     local DC, s = T.ns.DoubleCast, T.env.FishDexDB.settings
     local function double(gap)
@@ -184,16 +184,10 @@ H.test("the double click follows its delay, the mounted and the recast options",
     T.mounted = true
     double(0.1)
     H.eq(#T.bindings, 1)
-    s.castMounted = true
-    double(0.1)
-    H.eq(#T.bindings, 2)
     T.mounted = false
     T.channel = 7620 -- the bobber is out
     double(0.1)
-    H.eq(#T.bindings, 2)
-    s.recast = true
-    double(0.1)
-    H.eq(#T.bindings, 3)
+    H.eq(#T.bindings, 1)
 end)
 
 local function find(T, test)
@@ -212,7 +206,7 @@ H.test("the Options window's boxes save every option, the double click keeps its
     H.truthy(T.env.FishDexOptionsWindow:IsShown())
     local function box(key) return find(T, function(fr) return fr.kind == "CheckButton" and rawget(fr, "key") == key end) end
     for _, key in ipairs({ "sound", "announce", "share", "lureButton", "autoLoot", "hideNames", "loudSounds",
-        "doubleCast", "castMounted", "recast" }) do
+        "doubleCast", "useInteractKey" }) do
         H.truthy(box(key))
     end
     H.truthy(box("doubleCast"):GetChecked())
@@ -226,7 +220,6 @@ H.test("the Options window's boxes save every option, the double click keeps its
     H.eq({ s.castButton, s.doubleCast }, { "LeftButton", "LeftButton" })
     click(box("doubleCast"), false)
     H.eq(s.doubleCast, "off")
-    H.falsy(box("recast"):IsEnabled())
     click(box("doubleCast"), true)
     H.eq(s.doubleCast, "LeftButton")
     -- closing the dex window closes the Options window too

@@ -29,7 +29,7 @@ stds.wowlua = {
 
 -- Tests run on LuaJIT and use io, os, loadfile, dofile and setfenv.
 std = "lua51"
-files["FishDex"] = { std = "wowlua" }
+files["FishDex"] = { std = "wowlua", read_globals = { "_G" } }
 
 -- Globals the addon itself writes.
 globals = {
@@ -37,6 +37,9 @@ globals = {
     "SLASH_FISHDEX1",
     "SLASH_FISHDEX2",
     "FishDex_OnCompartmentClick",
+    "FishDex_FishKey",
+    "BINDING_HEADER_FISHDEX",
+    "BINDING_NAME_FISHDEX_FISHKEY",
 }
 
 -- WoW API the addon reads: add each one when the code starts using it.
@@ -56,6 +59,8 @@ read_globals = {
     "Minimap", "GetMinimapShape", "GetUnitName",
     "SetOverrideBindingClick", "ClearOverrideBindings", "WorldFrame", "InCombatLockdown", "GetInventoryItemID",
     "GetWeaponEnchantInfo", "IsShiftKeyDown", "IsMounted", "GetCursorPosition", "IsMouseButtonDown",
+    "GetBindingKey", "GetBindingText", "GetBindingAction", "SetBinding", "SaveBindings",
+    "GetCurrentBindingSet", "IsAltKeyDown", "IsControlKeyDown", "SetOverrideBinding", "UnitGUID", "GetSpellInfo",
     -- SlashCmdList is read-only as a whole; the addon may assign only its own handler.
     SlashCmdList = { other_fields = true, fields = { FISHDEX = { read_only = false } } },
 }

@@ -29,8 +29,10 @@ Dex.DEFAULTS = {
         lureButton = true, lure = { id = 0 }, doubleCast = "RightButton",
         -- The fishing options (Options window, 2026-11-05): castButton = the button the
         -- double click uses when it is on, castDelay its window in seconds; loudVolume 0..1.
-        castButton = "RightButton", castDelay = 0.4, castMounted = false, recast = false,
-        autoLoot = false, hideNames = false, loudSounds = false, loudVolume = 1 },
+        castButton = "RightButton", castDelay = 0.4,
+        autoLoot = false, hideNames = false, loudSounds = false, loudVolume = 1,
+        -- useInteractKey: the game's Interact Key fishes too (FishKeyButton.lua, 2026-11-07).
+        useInteractKey = true },
     -- saved[cvar] = { was, now }: game settings changed while fishing (Fishing.lua).
     fishing = { saved = {} },
 }

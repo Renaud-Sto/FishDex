@@ -5,6 +5,24 @@ versions: [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-11-07
+
+### Added
+- Fishing key (Options > Fishing, or Key Bindings > FishDex): one key casts Fishing, reels the bobber in once it is
+  within the game's Interact Key reach, then takes the loot. Every press is yours; the key only
+  works with a fishing pole equipped, and changes only out of combat. While you fish, the
+  Interact Key is turned on for the keyboard with a 30 yd reach, then put back.
+- Your Interact Key fishes too (option, on by default), and keeps its own job while an NPC or
+  an object is its target.
+- The double click reels the bobber in too, without aiming, once it is in the Interact Key's
+  reach.
+- Options: a "Cast and reel in" section that says how it works, and a tooltip on every
+  fishing option.
+
+### Removed
+- The "Also while mounted" and "Recast while the bobber is out" options: the double click and
+  the keys never cast while mounted or while the bobber is out (a second cast loses the fish).
+
 ## [1.0.0] - 2026-11-05
 
 First public release, tested on WoW Forever build 1.60.1.70790 (Interface 16001), English client.

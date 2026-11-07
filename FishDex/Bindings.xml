@@ -1,0 +1,5 @@
+<Bindings>
+    <Binding name="FISHDEX_FISHKEY" category="BINDING_HEADER_FISHDEX">
+        FishDex_FishKey()
+    </Binding>
+</Bindings>

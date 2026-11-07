@@ -33,9 +33,13 @@ function Fishing.soundCVars(volume)
     }
 end
 
--- Every CVar the options want while fishing: name -> value.
-function Fishing.wanted(settings)
+-- Every CVar the options want while fishing: name -> value. `fishKey` true: the fishing
+-- key is bound and a pole equipped, so the Interact Key must reach the bobber (FishKey.lua).
+function Fishing.wanted(settings, fishKey)
     local out = {}
+    if fishKey and ns.FishKey then
+        for k, v in pairs(ns.FishKey.CVARS) do out[k] = v end
+    end
     if settings.hideNames then
         for k, v in pairs(Fishing.NAME_CVARS) do out[k] = v end
     end
