@@ -5,6 +5,19 @@ versions: [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.1.1] - 2026-11-07
+
+### Changed
+- The double click has two options: "Double-click to cast" and "Double-click to reel in the
+  bobber", each on its own (both share the mouse button and the speed).
+
+### Fixed
+- Left and right click can never become a fishing key, even for the moment the double click
+  binds one to the Interact Key.
+
+### Added
+- `/fishdex debug`: prints every binding FishDex sets while fishing, to report a problem.
+
 ## [1.1.0] - 2026-11-07
 
 ### Added

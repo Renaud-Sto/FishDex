@@ -12,6 +12,12 @@ function Main.say(text)
     DEFAULT_CHAT_FRAME:AddMessage("|cff66ccff" .. L.TITLE .. "|r " .. tostring(text))
 end
 
+-- /fishdex debug: prints every mouse and key binding FishDex sets while fishing.
+Main.debug = false
+function Main.trace(text)
+    if Main.debug then Main.say("|cff999999" .. tostring(text) .. "|r") end
+end
+
 local function safe(fn, ...)
     if type(fn) ~= "function" then return nil end
     local ok, a, b = pcall(fn, ...)
@@ -137,6 +143,9 @@ local function slash(msg)
     elseif cmd == "clic" or cmd == "click" then
         Main.say(L["DOUBLE_" .. ns.DoubleCast.cycle()])
         Main.refresh()
+    elseif cmd == "debug" then
+        Main.debug = not Main.debug
+        Main.say(Main.debug and L.DEBUG_ON or L.DEBUG_OFF)
     elseif cmd == "minimap" then
         local m = Main.db.settings.minimap
         m.hide = not m.hide

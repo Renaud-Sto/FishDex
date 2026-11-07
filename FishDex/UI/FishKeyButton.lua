@@ -36,13 +36,16 @@ end
 local function inCombat() return safe(InCombatLockdown) == true end
 
 -- The keys bound to `action` in the Key Bindings (up to two).
+local MOUSE_LR = { BUTTON1 = true, BUTTON2 = true }
 local function keysOf(action)
     if type(GetBindingKey) ~= "function" then return {} end
     local ok, a, b = pcall(GetBindingKey, action)
     local out = {}
     if ok then
         for _, k in ipairs({ a or false, b or false }) do
-            if type(k) == "string" and k ~= "" and not secret(k) then out[#out + 1] = k end
+            -- Left and right click stay the mouse's: never a fishing key, even when the
+            -- double click has just bound one to the Interact Key for a moment.
+            if type(k) == "string" and k ~= "" and not secret(k) and not MOUSE_LR[k] then out[#out + 1] = k end
         end
     end
     return out
@@ -72,7 +75,7 @@ end
 -- FishKey.CVARS, so the Interact Key reaches the bobber.
 function FishKeyButton.active()
     if ns.Main.ready ~= true or not ns.LureButton.poleEquipped() then return false end
-    return #allKeys() > 0 or ns.DoubleCast.mode() ~= "off"
+    return #allKeys() > 0 or ns.DoubleCast.mode() ~= "off" or ns.Main.db.settings.doubleReel == true
 end
 
 -- The bobber is out and the Interact Key reaches it (the double click reels it in then).
@@ -147,6 +150,7 @@ function FishKeyButton.apply()
         end
     end
     applied, appliedKeys = want, joined
+    ns.Main.trace("keys " .. (joined ~= "" and joined or "-") .. ": " .. tostring(want))
 end
 
 local function setSoft(guid)

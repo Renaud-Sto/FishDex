@@ -10,7 +10,7 @@ ns.Options = Options
 
 local L, Kit = ns.L, ns.Kit
 
-local WIDTH, HEIGHT = 440, 474
+local WIDTH, HEIGHT = 440, 501
 local TABS = { "fishing", "sounds" }
 local ROW = 27
 
@@ -36,6 +36,7 @@ local AFTER = {
     lureButton = function() ns.LureButton.update() end,
     hideNames = function() ns.Session.apply() end,
     loudSounds = function() ns.Session.apply() end,
+    doubleReel = function() ns.Session.apply() end,
     useInteractKey = function()
         ns.FishKeyButton.apply()
         ns.Session.apply()
@@ -117,6 +118,8 @@ local function buildFishing(page)
     end)
     page.delay:SetPoint("TOPRIGHT", page, "TOPRIGHT", -54, y)
     y = y - ROW
+    addCheck(page, "doubleReel", y)
+    y = y - ROW
     -- The mouse button of the double click, kept while it is off.
     page.button = Kit.button(page, 150, 22, "", function()
         ns.DoubleCast.swapButton()
@@ -144,7 +147,6 @@ local function buildFishing(page)
     page.fishKey:RegisterForClicks("LeftButtonUp", "RightButtonUp")
     page.fishKey:SetPoint("TOPRIGHT", page, "TOPRIGHT", -54, y)
     tooltip(page.fishKey, "fishKey")
-    page.fishKey:SetScript("OnKeyDown", function(_, key) Options.capturePress(key) end)
     page.fishKey:HookScript("OnMouseDown", function(_, button)
         if state.capturing and ns.FishKey.MOUSE[button] then Options.capturePress(ns.FishKey.MOUSE[button]) end
     end)
@@ -156,6 +158,9 @@ function Options.startCapture()
     if not p then return end
     state.capturing = true
     local b = p.fishKeyButton
+    -- The key handler exists only while capturing: a frame with an OnKeyDown script takes
+    -- the keyboard (Escape and movement included) as long as it is shown.
+    b:SetScript("OnKeyDown", function(_, key) Options.capturePress(key) end)
     b:EnableKeyboard(true)
     if type(b.SetPropagateKeyboardInput) == "function" then pcall(b.SetPropagateKeyboardInput, b, false) end
     Options.refresh()
@@ -164,7 +169,10 @@ end
 function Options.stopCapture()
     if not state.capturing then return end
     state.capturing = false
-    if p then p.fishKeyButton:EnableKeyboard(false) end
+    if p then
+        p.fishKeyButton:SetScript("OnKeyDown", nil)
+        p.fishKeyButton:EnableKeyboard(false)
+    end
     Options.refresh()
 end
 
@@ -302,7 +310,7 @@ function Options.refresh()
     Kit.setSlider(page.volume, s.loudVolume)
     Kit.enableSlider(page.volume, s.loudSounds)
     Kit.setSlider(page.delay, s.castDelay)
-    Kit.enableSlider(page.delay, castOn)
+    Kit.enableSlider(page.delay, castOn or s.doubleReel)
     page.buttonLabel:SetText(L.OPT_CAST_BUTTON)
     page.button:SetText(L["CAST_" .. s.castButton])
     local keys = ns.FishKeyButton.keys()

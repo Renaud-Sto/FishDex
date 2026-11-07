@@ -32,7 +32,9 @@ Dex.DEFAULTS = {
         castButton = "RightButton", castDelay = 0.4,
         autoLoot = false, hideNames = false, loudSounds = false, loudVolume = 1,
         -- useInteractKey: the game's Interact Key fishes too (FishKeyButton.lua, 2026-11-07).
-        useInteractKey = true },
+        useInteractKey = true,
+        -- doubleReel: the double click reels the bobber in (2026-11-07, its own option).
+        doubleReel = true },
     -- saved[cvar] = { was, now }: game settings changed while fishing (Fishing.lua).
     fishing = { saved = {} },
 }

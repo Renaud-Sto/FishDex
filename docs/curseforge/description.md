@@ -7,7 +7,7 @@ FishDex turns fishing into a collection. Every fish, trophy, wreck and item you 
 - **First catch announce** in the middle of the screen, with a sound.
 - **Shiny catches**: every fish can come out shiny (rare 2 %, epic 0.5 %, legendary 0.05 %), with its own announce, colour, sound and tab. Purely cosmetic.
 - **Guild ranking**: total fished and shinies of your guild mates who use FishDex. Sent in one small message after you stop fishing.
-- **Cast and reel in without aiming**: double-click the world to cast; when a fish bites, double-click again and the bobber is reeled in, no need to click on it. Your Interact Key does the same (cast, reel in, loot), or pick a key of your own in the options. An icon shows on the bobber when it is in reach.
+- **Cast and reel in without aiming**: double-click the world to cast; when a fish bites, double-click again and the bobber is reeled in, no need to click on it (two options, each can be turned off). Your Interact Key does the same (cast, reel in, loot), or pick a key of your own in the options. An icon shows on the bobber when it is in reach.
 - **Fishing comfort**: a lure button while a fishing pole is equipped (click to apply, hover to choose), auto loot of fishing loot, friendly NPC names hidden and louder sounds while fishing. Your game settings come back 10 s after your last cast.
 - **Sounds of your choice** for each announce: game sounds, or sounds shared by your other addons.
 

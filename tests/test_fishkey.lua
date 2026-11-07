@@ -96,6 +96,7 @@ end)
 H.test("no key bound or no pole: no override and no CVar change; combat waits", function()
     local T = boot({})
     T.env.FishDexDB.settings.doubleCast = "off"
+    T.env.FishDexDB.settings.doubleReel = false
     H.eq(T.over, {})
     T.fire("UNIT_SPELLCAST_CHANNEL_START", "player", "guid", 7620)
     H.eq(T.cv.SoftTargetInteract, "1")
@@ -145,6 +146,8 @@ H.test("the Options window's button binds the fishing key, Escape cancels, right
     H.eq(b:GetText(), T.ns.L.OPT_FISHKEY_PRESS)
     rawget(b, "scripts").OnKeyDown(b, "ESCAPE")
     H.eq(binds, { F = "TOGGLEAUTORUN" })
+    -- no key handler outside a capture: Escape and movement reach the game
+    H.eq(rawget(b, "scripts").OnKeyDown, nil)
     rawget(b, "scripts").OnClick(b, "LeftButton")
     rawget(b, "scripts").OnKeyDown(b, "LSHIFT") -- waits for the key
     rawget(b, "scripts").OnKeyDown(b, "F")
@@ -235,4 +238,44 @@ H.test("the double click reels the bobber in once it is in reach, after the firs
     T.ns.DoubleCast.onWorldDown("RightButton")
     T.tick(0.02)
     H.eq(T.over, {})
+end)
+
+H.test("cast and reel in are two options; left and right click never become fishing keys", function()
+    local T = boot({})
+    local s = T.env.FishDexDB.settings
+    local held = false
+    T.env.IsMouseButtonDown = function() return held end
+    T.env.UnitChannelInfo = function() if T.channeling then return "Pêche", "", 1, 0, 0, false, false, 7620 end end
+    -- reel in off: a click while the bobber is in reach binds nothing
+    s.doubleReel = false
+    T.channeling = true
+    T.fire("UNIT_SPELLCAST_CHANNEL_START", "player", "guid", 7620)
+    T.fire("PLAYER_SOFT_INTERACT_CHANGED", nil, BOBBER)
+    T.ns.DoubleCast.onWorldDown("RightButton")
+    T.tick(0.02)
+    H.eq(T.over, {})
+    -- reel in on, cast off: the double click still reels in
+    s.doubleReel, s.doubleCast = true, "off"
+    T.ns.DoubleCast.onWorldDown("RightButton")
+    T.tick(0.02)
+    H.eq(T.over, { BUTTON2 = "INTERACTTARGET" })
+    -- that moment's BUTTON2 -> Interact Key is never read back as an Interact Key to fish with
+    local binds = { X = "INTERACTTARGET", BUTTON2 = "INTERACTTARGET" }
+    T.env.GetBindingKey = function(action)
+        local out = {}
+        for k, a in pairs(binds) do if a == action then out[#out + 1] = k end end
+        table.sort(out)
+        return unpack(out)
+    end
+    T.run()
+    T.channeling = false
+    T.fire("UNIT_SPELLCAST_CHANNEL_STOP", "player", "guid", 7620)
+    T.fire("PLAYER_SOFT_INTERACT_CHANGED", BOBBER, nil)
+    T.fire("UPDATE_BINDINGS")
+    H.eq(T.over, { X = "CLICK FishDexKeyCastButton" })
+    -- cast off: no double click cast
+    T.ns.DoubleCast.onWorldDown("RightButton")
+    T.clock = T.clock + 0.1
+    T.ns.DoubleCast.onWorldDown("RightButton")
+    H.eq(T.over, { X = "CLICK FishDexKeyCastButton" })
 end)

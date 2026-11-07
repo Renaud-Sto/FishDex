@@ -3,7 +3,7 @@
 ## Notes: A fishing collection: every fish, trophy, wreck and item you can fish, filled as you catch them.
 ## Notes-frFR: Une collection de pêche : chaque poisson, trophée, épave et objet pêchable, rempli au fil de tes prises.
 ## Author: renaud
-## Version: 1.1.0
+## Version: 1.1.1
 ## IconTexture: Interface\Icons\Trade_Fishing
 ## AddonCompartmentFunc: FishDex_OnCompartmentClick
 ## SavedVariables: FishDexDB

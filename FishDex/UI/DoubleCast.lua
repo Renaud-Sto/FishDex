@@ -83,6 +83,7 @@ local function clear()
     if not armed or inCombat() then return end
     armed = false
     safe(ClearOverrideBindings, owner)
+    ns.Main.trace("double click: mouse binding cleared")
 end
 
 local function stopWaiting()
@@ -109,20 +110,25 @@ local function create()
 end
 
 -- A press on the world.
+-- Two options since 2026-11-07 (renaud): the double click casts (doubleCast, on = its
+-- button) and the double click reels in (doubleReel); both use castButton and castDelay.
 function DoubleCast.onWorldDown(button)
-    local mode = DoubleCast.mode()
-    if mode == "off" or button ~= mode or not ns.Main.ready then
-        lastTime = nil
-        return
-    end
+    if not ns.Main.ready then return end
     local s = ns.Main.db.settings
-    if not inCombat() and bobberOut() and ns.LureButton.poleEquipped() and ns.FishKeyButton
-        and ns.FishKeyButton.bobberInReach() then
+    local castOn, reelOn = DoubleCast.mode() ~= "off", s.doubleReel == true
+    if button ~= s.castButton or not (castOn or reelOn) then
         lastTime = nil
-        DoubleCast.armReel(button, s.castDelay or Lures.DOUBLE_CLICK)
         return
     end
-    if inCombat() or safe(IsMounted) == true or not ns.LureButton.poleEquipped() or bobberOut() then
+    if bobberOut() then
+        lastTime = nil
+        if reelOn and not inCombat() and ns.LureButton.poleEquipped() and ns.FishKeyButton
+            and ns.FishKeyButton.bobberInReach() then
+            DoubleCast.armReel(button, s.castDelay or Lures.DOUBLE_CLICK)
+        end
+        return
+    end
+    if not castOn or inCombat() or safe(IsMounted) == true or not ns.LureButton.poleEquipped() then
         lastTime = nil
         return
     end
@@ -137,6 +143,7 @@ function DoubleCast.onWorldDown(button)
     if not cast then create() end
     cast:SetAttribute("spell", spell)
     safe(SetOverrideBindingClick, owner, true, BINDING[button], DoubleCast.NAME)
+    ns.Main.trace("double click: " .. BINDING[button] .. " casts")
     armed = true
     C_Timer.After(DoubleCast.SAFETY, clear)
 end
@@ -156,6 +163,7 @@ function DoubleCast.armReel(button, window)
         stopWaiting()
         if not cast then create() end
         safe(SetOverrideBinding, owner, true, BINDING[button], "INTERACTTARGET")
+        ns.Main.trace("double click: " .. BINDING[button] .. " reels in")
         armed = true
         C_Timer.After(left, clear)
     end)

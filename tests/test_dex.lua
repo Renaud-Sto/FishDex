@@ -43,7 +43,7 @@ H.test("saved data is repaired in place and bad catch records are dropped", func
     H.eq(saved.settings, { sound = true, announce = true, share = true, locale = "", sounds = {},
         minimap = { hide = false, angle = 200 }, lureButton = true, lure = { id = 0 }, doubleCast = "RightButton",
         castButton = "RightButton", castDelay = 0.4, autoLoot = false,
-        hideNames = false, loudSounds = false, loudVolume = 1, useInteractKey = true })
+        hideNames = false, loudSounds = false, loudVolume = 1, useInteractKey = true, doubleReel = true })
     H.eq(saved.fishing, { saved = {} })
     -- out of range values come back inside it
     local odd = ns.Dex.repair({ settings = { castDelay = 5, loudVolume = -1, castButton = "x" } })
