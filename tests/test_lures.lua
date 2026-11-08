@@ -108,3 +108,33 @@ H.test("test mode: without a pole, /fishdex testcanne shows the button until tur
     T.env.SlashCmdList.FISHDEX("testcanne")
     H.falsy(b:IsShown())
 end)
+
+H.test("the lure's time left counts down every second, even when the client repeats it", function()
+    local Lures = H.newNS("Locale", "Data", "Dex", "Shiny", "Lures").Lures
+    local endAt = Lures.endTime(600000, nil, nil, 100)
+    H.eq(endAt, 700)
+    H.eq(Lures.endTime(600000, 600000, endAt, 105), 700) -- same report: the end stays
+    H.eq(Lures.endTime(590000, 600000, endAt, 110), 700 - 10 + 10) -- a new report resets it
+    H.eq(Lures.endTime(0, 600000, endAt, 110), nil)
+    H.eq(Lures.endTime(nil, nil, nil, 110), nil)
+end)
+
+H.test("with no lure left in the bags, the button shows the applied one and counts down", function()
+    local T = boot()
+    local b = T.env.FishDexLureButton
+    local enchant = { false }
+    T.env.GetWeaponEnchantInfo = function() return unpack(enchant) end
+    T.env.C_Item.GetItemIconByID = function(id) return "icon" .. id end
+    -- the button puts its lure on: the enchant that appears is remembered as that lure
+    rawget(b, "scripts").PreClick(b)
+    T.bags = {}
+    enchant = { true, 600000, 0, 263 }
+    T.fire("BAG_UPDATE_DELAYED")
+    H.eq(rawget(b, "lureID"), nil)
+    H.eq(rawget(b, "activeID"), 6532)
+    H.eq(b.timer:GetText(), "10:00")
+    -- the client keeps reporting 10:00: the button still counts down
+    T.tick(61)
+    H.eq(b.timer:GetText(), "8:59")
+    H.eq(T.env.FishDexDB.settings.lure.enchants[263], 6532)
+end)

@@ -5,6 +5,19 @@ versions: [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.1.2] - 2026-11-08
+
+### Fixed
+- The lure button's time left counts down every second (it only moved between casts).
+- With no lure left in the bags, the lure button shows the lure on the pole instead of a
+  question mark, once the button has applied that lure once.
+
+### Performance
+- Spell casts and inventory changes of other units (party, raid, players around) no longer
+  wake FishDex; the soft-interact target is watched only while a fishing pole is equipped,
+  and only a change that matters re-applies the bindings; other addons' messages are dropped
+  on their prefix first.
+
 ## [1.1.1] - 2026-11-07
 
 ### Changed

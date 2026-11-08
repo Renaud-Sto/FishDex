@@ -97,6 +97,16 @@ function Lures.timeLeft(ms)
     return string.format("%d:%02d", math.floor(s / 60), s % 60)
 end
 
+-- When the applied lure runs out (GetTime() seconds). The client may report the same time
+-- left until something on the pole changes (seen on Forever, 2026-11-08: the timer only
+-- moved between casts), so a new report sets the end and the countdown runs from it.
+-- `ms` the time left reported now, `last` the previous report, `endAt` the previous end.
+function Lures.endTime(ms, last, endAt, now)
+    if type(ms) ~= "number" or ms <= 0 then return nil end
+    if ms ~= last or endAt == nil then return now + ms / 1000 end
+    return endAt
+end
+
 -- A double click: two presses of the same button within `window` seconds.
 Lures.DOUBLE_CLICK = 0.4
 function Lures.isDouble(lastTime, lastButton, now, button, window)

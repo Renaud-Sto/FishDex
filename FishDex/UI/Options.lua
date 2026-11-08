@@ -36,7 +36,10 @@ local AFTER = {
     lureButton = function() ns.LureButton.update() end,
     hideNames = function() ns.Session.apply() end,
     loudSounds = function() ns.Session.apply() end,
-    doubleReel = function() ns.Session.apply() end,
+    doubleReel = function()
+        ns.FishKeyButton.apply()
+        ns.Session.apply()
+    end,
     useInteractKey = function()
         ns.FishKeyButton.apply()
         ns.Session.apply()

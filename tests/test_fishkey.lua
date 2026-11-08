@@ -256,6 +256,8 @@ H.test("cast and reel in are two options; left and right click never become fish
     H.eq(T.over, {})
     -- reel in on, cast off: the double click still reels in
     s.doubleReel, s.doubleCast = true, "off"
+    T.ns.FishKeyButton.apply() -- what the Options box does
+    T.fire("PLAYER_SOFT_INTERACT_CHANGED", nil, BOBBER)
     T.ns.DoubleCast.onWorldDown("RightButton")
     T.tick(0.02)
     H.eq(T.over, { BUTTON2 = "INTERACTTARGET" })
@@ -278,4 +280,24 @@ H.test("cast and reel in are two options; left and right click never become fish
     T.clock = T.clock + 0.1
     T.ns.DoubleCast.onWorldDown("RightButton")
     H.eq(T.over, { X = "CLICK FishDexKeyCastButton" })
+end)
+
+H.test("the soft target is watched only with a pole, and channels of other units are ignored", function()
+    local T = boot({ "F" })
+    local function watched()
+        for _, fr in ipairs(T.frames) do
+            if fr.events["PLAYER_SOFT_INTERACT_CHANGED"] then return true end
+        end
+        return false
+    end
+    H.truthy(watched())
+    T.pole = false
+    T.fire("PLAYER_EQUIPMENT_CHANGED", 16)
+    H.falsy(watched())
+    T.pole = true
+    T.fire("PLAYER_EQUIPMENT_CHANGED", 16)
+    H.truthy(watched())
+    -- another unit's fishing channel changes nothing
+    T.fire("UNIT_SPELLCAST_CHANNEL_START", "party1", "guid", 7620)
+    H.eq(T.ns.FishKeyButton.state(), "cast")
 end)

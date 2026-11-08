@@ -157,6 +157,8 @@ function Comm.onCatch()
 end
 
 function Comm.receive(prefix, text, channel, sender)
+    -- Every addon's messages come here: the cheap prefix test first (a secret is never equal).
+    if prefix ~= Board.PREFIX then return end
     if not clean(prefix, text, channel, sender) then return end
     if prefix ~= Board.PREFIX or channel ~= "GUILD" or type(sender) ~= "string" then return end
     local kind, id, score, named = Board.decode(text)

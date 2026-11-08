@@ -26,6 +26,9 @@ local main            -- the secure button, nil until the first update outside c
 local flyout = {}
 local pending = false -- an update asked for in combat
 local timer, watch    -- tickers: the lure's time left, the hover list's closing
+local lastMs, endAt   -- the last time left the client reported, and the end it gives
+local applying        -- { id, at }: the lure this button just put on the pole
+local offeredID       -- the lure the button offers from the bags, nil with none
 
 local function safe(fn, ...)
     if type(fn) ~= "function" then return nil end
@@ -62,11 +65,56 @@ local function icon(id) return id and ns.Main.itemIcon(id) or NONE_ICON end
 
 local function hideTooltip() if type(GameTooltip) == "table" then GameTooltip:Hide() end end
 
--- Time left on the lure of the pole, on the button.
+-- The lure on the pole: has one, time left (ms), enchant id. Secret values count as none.
+local function poleEnchant()
+    if type(GetWeaponEnchantInfo) ~= "function" then return false end
+    local ok, has, ms, _, enchantID = pcall(GetWeaponEnchantInfo)
+    if not ok then return false end
+    if type(issecretvalue) == "function" and (issecretvalue(has) or issecretvalue(ms) or issecretvalue(enchantID)) then
+        return false
+    end
+    return has == true, ms, enchantID
+end
+
+-- The item of the lure on the pole, when known: the one this button applied, remembered
+-- by its enchant id (settings().enchants), so a lure put on from the bags is known too
+-- once the button has applied it before.
+local function activeLure(has, enchantID)
+    if not has then return nil end
+    local s = settings()
+    if type(s.enchants) ~= "table" then s.enchants = {} end
+    if applying and GetTime() - applying.at < 10 and type(enchantID) == "number" then
+        s.enchants[enchantID] = applying.id
+        applying = nil
+    end
+    return type(enchantID) == "number" and s.enchants[enchantID] or nil
+end
+
+-- Time left on the lure of the pole, counted down every second; with no lure in the bags,
+-- the button shows the applied one instead of the question mark.
 local function refreshTimer()
     if not main then return end
-    local has, expiration = safe(GetWeaponEnchantInfo)
-    main.timer:SetText(has and Lures.timeLeft(expiration) or "")
+    local has, ms, enchantID = poleEnchant()
+    local now = GetTime()
+    endAt = has and Lures.endTime(ms, lastMs, endAt, now) or nil
+    lastMs = has and ms or nil
+    main.timer:SetText(endAt and Lures.timeLeft((endAt - now) * 1000) or "")
+    if offeredID == nil then
+        main.activeID = activeLure(has, enchantID)
+        main.icon:SetTexture(icon(main.activeID))
+        main.icon:SetDesaturated(main.activeID == nil)
+    else
+        activeLure(has, enchantID)
+    end
+end
+
+local function runTimer(on)
+    if on and not timer then
+        timer = C_Timer.NewTicker(1, refreshTimer)
+    elseif not on and timer then
+        timer:Cancel()
+        timer = nil
+    end
 end
 
 local function hideFlyout()
@@ -86,8 +134,10 @@ end
 local function showTooltip(self)
     if type(GameTooltip) ~= "table" then return end
     GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-    if self.lureID and type(GameTooltip.SetItemByID) == "function" then
-        GameTooltip:SetItemByID(self.lureID)
+    local shown = self.lureID or self.activeID
+    if shown and type(GameTooltip.SetItemByID) == "function" then
+        GameTooltip:SetItemByID(shown)
+        if not self.lureID then GameTooltip:AddLine(L.LURE_NONE, WHITE[1], WHITE[2], WHITE[3]) end
     else
         GameTooltip:AddLine(L.LURE_NONE, WHITE[1], WHITE[2], WHITE[3])
     end
@@ -194,14 +244,17 @@ local function create()
         self:StopMovingOrSizing()
         savePosition()
     end)
+    -- A frame is created shown, so OnShow does not run then: update() starts the ticker too.
     main:HookScript("OnShow", function()
         refreshTimer()
-        if not timer then timer = C_Timer.NewTicker(1, refreshTimer) end
+        runTimer(true)
     end)
     main:HookScript("OnHide", function()
-        if timer then timer:Cancel() end
-        timer = nil
+        runTimer(false)
         hideFlyout()
+    end)
+    main:HookScript("PreClick", function()
+        if offeredID then applying = { id = offeredID, at = GetTime() } end
     end)
     for i = 1, LureButton.FLYOUT_MAX do flyout[i] = newFlyoutButton(i) end
 end
@@ -222,7 +275,8 @@ function LureButton.update()
     end
     local list = LureButton.bagLures()
     local offered = Lures.pick(list, settings().id)
-    main.lureID = offered and offered.id or nil
+    offeredID = offered and offered.id or nil
+    main.lureID = offeredID
     main:SetAttribute("item", offered and ("item:" .. offered.id) or nil)
     main.icon:SetTexture(icon(main.lureID))
     main.icon:SetDesaturated(offered == nil)
@@ -242,6 +296,7 @@ function LureButton.update()
         flyout[k]:Hide()
     end
     main:SetShown(wanted)
+    runTimer(wanted)
     refreshTimer()
 end
 
@@ -264,9 +319,19 @@ function LureButton.onEvent(event, unit)
     end
 end
 
+-- UNIT_ events only for the player (a channel or an inventory change of every unit around
+-- would wake the handler for nothing); the plain registration where that is missing.
+local function register(frame, event)
+    if event:match("^UNIT_") then
+        pcall(frame.RegisterUnitEvent, frame, event, "player")
+        if frame:IsEventRegistered(event) then return end
+    end
+    pcall(frame.RegisterEvent, frame, event)
+end
+
 local events = CreateFrame("Frame")
 for _, e in ipairs({ "PLAYER_LOGIN", "PLAYER_EQUIPMENT_CHANGED", "BAG_UPDATE_DELAYED", "PLAYER_REGEN_ENABLED",
     "UNIT_INVENTORY_CHANGED" }) do
-    pcall(events.RegisterEvent, events, e)
+    register(events, e)
 end
 events:SetScript("OnEvent", function(_, event, ...) LureButton.onEvent(event, ...) end)

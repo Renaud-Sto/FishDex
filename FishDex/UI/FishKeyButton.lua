@@ -85,10 +85,27 @@ function FishKeyButton.state()
     return applied
 end
 
+-- Cached: the cast macro is rebuilt on every apply; SPELLS_CHANGED clears it (a new rank).
+local castName
 local function fishingName()
+    if castName then return castName end
     local id = ns.Lures.fishingSpell(function(spellID) return safe(IsPlayerSpell, spellID) end)
     if not id then return nil end
-    return ns.Detect.spellName(id) or safe(GetSpellInfo, id)
+    castName = ns.Detect.spellName(id) or safe(GetSpellInfo, id)
+    return castName
+end
+
+-- The soft target changes all the time while walking (every NPC, chair, mailbox): it is
+-- watched only while a pole is equipped, and a change that moves nothing applies nothing.
+local events
+local function watchSoft(on)
+    if not events then return end
+    if on and not events:IsEventRegistered("PLAYER_SOFT_INTERACT_CHANGED") then
+        pcall(events.RegisterEvent, events, "PLAYER_SOFT_INTERACT_CHANGED")
+    elseif not on and events:IsEventRegistered("PLAYER_SOFT_INTERACT_CHANGED") then
+        pcall(events.UnregisterEvent, events, "PLAYER_SOFT_INTERACT_CHANGED")
+        softOther = false
+    end
 end
 
 local function lootAll()
@@ -118,7 +135,9 @@ end
 function FishKeyButton.apply()
     if not ns.Main.ready then return end
     local keys = allKeys()
-    local want = FishKey.want({ bound = #keys > 0, pole = ns.LureButton.poleEquipped(), lootOpen = lootOpen,
+    local pole = ns.LureButton.poleEquipped()
+    watchSoft(pole and (#keys > 0 or ns.Main.db.settings.doubleReel == true))
+    local want = FishKey.want({ bound = #keys > 0, pole = pole, lootOpen = lootOpen,
         channeling = channeling, inReach = inReach })
     local macro = want == "cast" and FishKey.castMacro(fishingName()) or nil
     if want == "cast" and not macro then want = nil end
@@ -153,11 +172,12 @@ function FishKeyButton.apply()
     ns.Main.trace("keys " .. (joined ~= "" and joined or "-") .. ": " .. tostring(want))
 end
 
-local function setSoft(guid)
+local function setSoft(guid, force)
     local hidden = secret(guid)
     local bobber = FishKey.isBobber(guid, hidden)
-    inReach = channeling and bobber
-    softOther = not bobber and (hidden or guid ~= nil)
+    local reach, other = channeling and bobber, not bobber and (hidden or guid ~= nil)
+    if not force and reach == inReach and other == softOther then return end
+    inReach, softOther = reach, other
     FishKeyButton.apply()
 end
 
@@ -166,7 +186,7 @@ function FishKeyButton.onEvent(event, a1, a2, a3)
         if a1 ~= "player" or not ns.Detect.isFishingSpell(a3) then return end
         channeling = true
         local ok, guid = pcall(UnitGUID, "softinteract")
-        setSoft(ok and guid or nil)
+        setSoft(ok and guid or nil, true)
     elseif event == "UNIT_SPELLCAST_CHANNEL_STOP" then
         if a1 ~= "player" or not channeling then return end
         if not (secret(a3) or ns.Detect.isFishingSpell(a3)) then return end
@@ -188,13 +208,15 @@ function FishKeyButton.onEvent(event, a1, a2, a3)
         if ns.Options then ns.Options.refresh() end
     elseif event == "PLAYER_REGEN_ENABLED" then
         if pending then FishKeyButton.apply() end
+    elseif event == "SPELLS_CHANGED" then
+        castName = nil
     else -- PLAYER_EQUIPMENT_CHANGED, PLAYER_ENTERING_WORLD: the pole
         FishKeyButton.apply()
     end
 end
 
 FishKeyButton.EVENTS = { "UNIT_SPELLCAST_CHANNEL_START", "UNIT_SPELLCAST_CHANNEL_STOP",
-    "PLAYER_SOFT_INTERACT_CHANGED", "LOOT_OPENED", "LOOT_CLOSED", "UPDATE_BINDINGS",
+    "SPELLS_CHANGED", "LOOT_OPENED", "LOOT_CLOSED", "UPDATE_BINDINGS",
     "PLAYER_REGEN_ENABLED", "PLAYER_EQUIPMENT_CHANGED", "PLAYER_ENTERING_WORLD" }
 
 -- Binds `chord` to the fishing key in the player's Key Bindings (the Options window's
@@ -240,8 +262,18 @@ end
 BINDING_HEADER_FISHDEX = "FishDex"
 BINDING_NAME_FISHDEX_FISHKEY = L.FISHKEY_BINDING
 
-local events = CreateFrame("Frame")
-for _, e in ipairs(FishKeyButton.EVENTS) do pcall(events.RegisterEvent, events, e) end
+-- UNIT_ events only for the player (a channel or an inventory change of every unit around
+-- would wake the handler for nothing); the plain registration where that is missing.
+local function register(frame, event)
+    if event:match("^UNIT_") then
+        pcall(frame.RegisterUnitEvent, frame, event, "player")
+        if frame:IsEventRegistered(event) then return end
+    end
+    pcall(frame.RegisterEvent, frame, event)
+end
+
+events = CreateFrame("Frame")
+for _, e in ipairs(FishKeyButton.EVENTS) do register(events, e) end
 events:SetScript("OnEvent", function(_, event, ...)
     if ns.Main.ready then FishKeyButton.onEvent(event, ...) end
 end)

@@ -103,8 +103,18 @@ end
 Session.EVENTS = { "PLAYER_LOGIN", "PLAYER_LOGOUT", "PLAYER_REGEN_ENABLED", "LOOT_CLOSED",
     "UNIT_SPELLCAST_CHANNEL_START", "UNIT_SPELLCAST_CHANNEL_STOP" }
 
+-- UNIT_ events only for the player (a channel or an inventory change of every unit around
+-- would wake the handler for nothing); the plain registration where that is missing.
+local function register(frame, event)
+    if event:match("^UNIT_") then
+        pcall(frame.RegisterUnitEvent, frame, event, "player")
+        if frame:IsEventRegistered(event) then return end
+    end
+    pcall(frame.RegisterEvent, frame, event)
+end
+
 local events = CreateFrame("Frame")
-for _, e in ipairs(Session.EVENTS) do pcall(events.RegisterEvent, events, e) end
+for _, e in ipairs(Session.EVENTS) do register(events, e) end
 events:SetScript("OnEvent", function(_, event, ...)
     if ns.Main.ready then Session.onEvent(event, ...) end
 end)

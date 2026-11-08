@@ -178,12 +178,22 @@ SLASH_FISHDEX1 = "/fishdex"
 SLASH_FISHDEX2 = "/peche"
 SlashCmdList.FISHDEX = slash
 
+-- UNIT_ events only for the player (a channel or an inventory change of every unit around
+-- would wake the handler for nothing); the plain registration where that is missing.
+local function register(frame, event)
+    if event:match("^UNIT_") then
+        pcall(frame.RegisterUnitEvent, frame, event, "player")
+        if frame:IsEventRegistered(event) then return end
+    end
+    pcall(frame.RegisterEvent, frame, event)
+end
+
 local frame = CreateFrame("Frame")
 local events = { "ADDON_LOADED", "ADDON_ACTION_BLOCKED", "ADDON_ACTION_FORBIDDEN", "TRADE_SKILL_SHOW",
     "TRADE_SKILL_LIST_UPDATE", "TRADE_SKILL_DATA_SOURCE_CHANGED", "GET_ITEM_INFO_RECEIVED" }
 for _, e in ipairs(ns.Detect.EVENTS) do events[#events + 1] = e end
 for _, e in ipairs(ns.Comm.EVENTS) do events[#events + 1] = e end
 for _, event in ipairs(events) do
-    pcall(frame.RegisterEvent, frame, event)
+    register(frame, event)
 end
 frame:SetScript("OnEvent", function(_, event, ...) Main.onEvent(event, ...) end)
